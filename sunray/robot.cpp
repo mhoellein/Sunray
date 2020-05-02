@@ -210,6 +210,7 @@ void startIMU(bool forceIMU){
   }
   CONSOLE.println();    
   imu.resetFifo();
+  lastIMUYaw = 0;
   imuDataTimeout = millis() + 1000;
 }
 
