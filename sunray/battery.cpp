@@ -41,7 +41,7 @@ void Battery::begin()
   batSwitchOffIfBelow = 21.7;  // switch off battery if below voltage (Volt)  
   batSwitchOffIfIdle = 300;      // switch off battery if idle (seconds)
   batFullCurrent  = 0.4;      // current flowing when battery is fully charged
-  startChargingIfBelow = 26.0; // start charging if battery Voltage is below  
+  startChargingIfBelow = 28.0; // start charging if battery Voltage is below  
   batteryVoltage = 0;
 }
 
@@ -79,7 +79,7 @@ void Battery::allowSwitchOff(bool flag){
 
 void Battery::run(){  
   chargingVoltage = ((float)ADC2voltage(analogRead(pinChargeVoltage))) * batteryFactor;  
-  float w = 0.9;
+  float w = 0.99;
   if (batteryVoltage < 5) w = 0;
   batteryVoltage = w * batteryVoltage + (1-w) * ((float)ADC2voltage(analogRead(pinBatteryVoltage))) * batteryFactor;  
   chargingCurrent = 0.9 * chargingCurrent + 0.1 * ((float)ADC2voltage(analogRead(pinChargeCurrent))) * currentFactor;    
@@ -118,10 +118,11 @@ void Battery::run(){
       if (chargerConnectedState){	      
         // charger in connected state
         if (chargingEnabled){
-          if ((timeMinutes > 180) || (chargingCurrent < batFullCurrent)) {        
+          //if ((timeMinutes > 180) || (chargingCurrent < batFullCurrent)) {        
+          if (chargingCurrent < batFullCurrent) {        
             // stop charging
             enableCharging(false);
-          }          
+          }
         } else {
            if (batteryVoltage < startChargingIfBelow) {
               // start charging
