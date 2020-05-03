@@ -14,6 +14,7 @@
 
 
 void Map::begin(){
+  wayMode = WAY_MOW;
   targetWaypointIdx = 0;
   waypointsCount = 0;
   for (int i=0; i < MAX_POINTS; i++){
@@ -48,6 +49,10 @@ float Map::distanceToTargetPoint(float stateX, float stateY){
   float dY = targetPoint.y - stateY;
   float targetDist = sqrt( sq(dX) + sq(dY) );    
   return targetDist;
+}
+
+bool Map::nextWaypointAvailable(){
+  return (targetWaypointIdx < waypointsCount);
 }
 
 bool Map::nextWaypoint(){

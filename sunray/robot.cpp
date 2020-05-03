@@ -562,14 +562,14 @@ void setOperation(OperationType op){
       motor.setMowState(false);
       break;
     case OP_MOW:      
-      if (maps.targetWaypointIdx >= maps.waypointsCount) {
-        CONSOLE.println("error: no waypoints!");
-        op = stateOp;        
-      } else {
+      if (maps.nextWaypointAvailable()) {
         resetMotionMeasurement();        
         maps.setLastTargetPoint(stateX, stateY);        
         stateSensor = SENS_NONE;
-        motor.setMowState(true);
+        motor.setMowState(true);        
+      } else {
+        CONSOLE.println("error: no waypoints!");
+        op = stateOp;                
       }
       break;
     case OP_CHARGE:
