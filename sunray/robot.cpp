@@ -459,7 +459,7 @@ void controlRobotVelocity(){
           else
             linear = setSpeed;         // desired speed
         }
-        angular = 0.5 * diffDelta + 0.5 * lateralError;       // correct for path errors
+        angular = 3.0 * diffDelta + 3.0 * lateralError;       // correct for path errors
         /*pidLine.w = 0;              
         pidLine.x = lateralError;
         pidLine.max_output = PI;
