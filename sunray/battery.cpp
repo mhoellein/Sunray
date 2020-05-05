@@ -28,7 +28,7 @@ void Battery::begin()
   batGoHomeIfBelow = 23.7;     // drive home voltage (Volt)  
   batSwitchOffIfBelow = 21.7;  // switch off battery if below voltage (Volt)  
   batSwitchOffIfIdle = 300;      // switch off battery if idle (seconds)
-  batFullCurrent  = 0.4;      // current flowing when battery is fully charged
+  batFullCurrent  = 0.2;      // current flowing when battery is fully charged
   startChargingIfBelow = 28.0; // start charging if battery Voltage is below  
   batteryVoltage = 0;
 
