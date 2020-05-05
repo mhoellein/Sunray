@@ -27,7 +27,7 @@ String BLEConfig::exec(String cmd){
 
 void BLEConfig::run(){  
   int baud;
-  while (true){    
+  //while (true){    
     for (int i=0; i < 12; i++){
       switch(i){
         /*case 0: baud=1200; break;  
@@ -48,6 +48,7 @@ void BLEConfig::run(){
       CONSOLE.print(baud);
       CONSOLE.println("...");
       BLE.begin(baud);    
+      //BLE.flush();
       String res = exec("AT\r\n");
       if (res.indexOf("OK") != -1){
         CONSOLE.println("Bluetooth 4.0/BLE module found!");
@@ -62,6 +63,6 @@ void BLEConfig::run(){
         }                  
       }
     }     
-    delay(1000);
-  }
+    //delay(1000);
+  //}
 }
