@@ -17,23 +17,11 @@ void Battery::begin()
   // keep battery switched ON
   pinMode(pinBatterySwitch, OUTPUT);    
   digitalWrite(pinBatterySwitch, HIGH);  
-
-  pinMode(pinChargeRelay, OUTPUT);
-  pinMode(pinBatteryVoltage, INPUT);
-  pinMode(pinChargeVoltage, INPUT);
-  pinMode(pinChargeCurrent, INPUT);
-  enableCharging(false);
-  allowSwitchOff(false);
-  resetIdle();
-  
-  pinMode(pinChargeCurrent, INPUT);
-  pinMode(pinBatteryVoltage, INPUT);
-  pinMode(pinChargeVoltage, INPUT);
   
   nextCheckTime = 0;
-	timeMinutes=0;
-  chargerConnectedState = false;    
-  
+	timeMinutes=0;  
+  chargerConnectedState = false;      
+  chargingEnabled = true;
   batteryFactor = (100+10) / 10;    // ADC voltage to battery voltage
   currentFactor = 0.5;         // ADC voltage to current ampere
   batMonitor = true;              // monitor battery and charge voltage?    
@@ -43,10 +31,23 @@ void Battery::begin()
   batFullCurrent  = 0.4;      // current flowing when battery is fully charged
   startChargingIfBelow = 28.0; // start charging if battery Voltage is below  
   batteryVoltage = 0;
+
+  pinMode(pinChargeRelay, OUTPUT);
+  pinMode(pinBatteryVoltage, INPUT);
+  pinMode(pinChargeVoltage, INPUT);
+  pinMode(pinChargeCurrent, INPUT);
+  pinMode(pinChargeCurrent, INPUT);
+  pinMode(pinBatteryVoltage, INPUT);
+  pinMode(pinChargeVoltage, INPUT);
+  
+  enableCharging(false);
+  allowSwitchOff(false);
+  resetIdle();    
 }
 
 
 void Battery::enableCharging(bool flag){
+  if (chargingEnabled == flag) return;
   DEBUG(F("enableCharging "));
   DEBUGLN(flag);
   chargingEnabled = flag;
@@ -55,7 +56,7 @@ void Battery::enableCharging(bool flag){
 }
 
 bool Battery::chargerConnected(){
-  return (chargingVoltage > 5);
+  return chargerConnectedState;  
 }
   
 
@@ -83,24 +84,23 @@ void Battery::run(){
   if (batteryVoltage < 5) w = 0;
   batteryVoltage = w * batteryVoltage + (1-w) * ((float)ADC2voltage(analogRead(pinBatteryVoltage))) * batteryFactor;  
   chargingCurrent = 0.9 * chargingCurrent + 0.1 * ((float)ADC2voltage(analogRead(pinChargeCurrent))) * currentFactor;    
+		
+  if (!chargerConnectedState){
+	  if (chargingVoltage > 5){
+      chargerConnectedState = true;		    
+		  DEBUGLN(F("CHARGER CONNECTED"));      	              
+      buzzer.sound(SND_OVERCURRENT, true);        
+    }
+  }
 	
-	if (chargerConnected()){           
-      if (!chargerConnectedState){
-	      chargerConnectedState = true;		    
-		    DEBUGLN(F("CHARGER CONNECTED"));      	              
-        buzzer.sound(SND_OVERCURRENT, true);
-        enableCharging(true);        				
-	    }
-  } else {
-      if (chargerConnectedState){        
-        chargerConnectedState = false;
-        DEBUGLN(F("CHARGER DISCONNECTED"));              				
-        enableCharging(false);				
-      }
-  }      		
-  
   if (millis() >= nextCheckTime){    
     nextCheckTime = millis() + 5000;  	   	   	
+    if (chargerConnectedState){        
+      if (chargingVoltage <= 5){
+        chargerConnectedState = false;
+        DEBUGLN(F("CHARGER DISCONNECTED"));              				        
+      }
+    }      		
     timeMinutes = (millis()-chargingStartTime) / 1000 /60;
     if (switchOffAllowed) {
       if (underVoltage()) {
@@ -114,8 +114,7 @@ void Battery::run(){
       } else digitalWrite(pinBatterySwitch, HIGH);          
     }
     	  
-    if (chargerConnected()){           
-      if (chargerConnectedState){	      
+    if (chargerConnectedState){	      
         // charger in connected state
         if (chargingEnabled){
           //if ((timeMinutes > 180) || (chargingCurrent < batFullCurrent)) {        
@@ -124,13 +123,12 @@ void Battery::run(){
             enableCharging(false);
           }
         } else {
-           if (batteryVoltage < startChargingIfBelow) {
+           //if (batteryVoltage < startChargingIfBelow) {
               // start charging
               enableCharging(true);
               chargingStartTime = millis();  
-          }        
-        }
-      }      
+          //}        
+        }    
     } 
 		
 		if (millis() >= nextPrintTime){

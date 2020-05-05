@@ -299,6 +299,7 @@ void start(){
       #endif
     } else break;
   }
+  delay(1500);
   CONSOLE.println(VER);          
   battery.begin();      
   
