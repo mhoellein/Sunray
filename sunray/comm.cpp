@@ -241,9 +241,28 @@ void cmdStats(){
 }
 
 // process request
-void processCmd(){
-  cmdResponse = "";
-  if (cmd.length() < 4) return;      
+void processCmd(bool checkCrc){
+  cmdResponse = "";      
+  if (cmd.length() < 4) return;
+  if (checkCrc){
+    byte expectedCrc = 0;
+    int idx = cmd.lastIndexOf(',');
+    if (idx < 1){
+      CONSOLE.println("CRC ERROR");
+      return;
+    } 
+    for (int i=0; i < idx; i++) expectedCrc += cmd[i];  
+    String s = cmd.substring(idx+1, idx+5);
+    int crc = strtol(s.c_str(), NULL, 16);  
+    if (expectedCrc != crc){
+      CONSOLE.print("CRC ERROR");
+      CONSOLE.print(crc,HEX);
+      CONSOLE.print(",");
+      CONSOLE.print(expectedCrc,HEX);
+      CONSOLE.println();
+      return;
+    }  
+  }
   if (cmd[0] != 'A') return;
   if (cmd[1] != 'T') return;
   if (cmd[2] != '+') return;
@@ -266,7 +285,7 @@ void processConsole(){
       ch = CONSOLE.read();          
       if ((ch == '\r') || (ch == '\n')) {        
         CONSOLE.println(cmd);
-        processCmd();              
+        processCmd(false);              
         CONSOLE.print(cmdResponse);    
         cmd = "";
       } else if (cmd.length() < 500){
@@ -284,8 +303,8 @@ void processBLE(){
     while ( BLE.available() ){    
       ch = BLE.read();      
       if ((ch == '\r') || (ch == '\n')) {        
-        CONSOLE.println(cmd);
-        processCmd();              
+        CONSOLE.println(cmd);        
+        processCmd(true);              
         BLE.print(cmdResponse);    
         cmd = "";
       } else if (cmd.length() < 500){
@@ -332,7 +351,7 @@ void processWifi()
           }
           CONSOLE.println(cmd);
           if (client.connected()) {
-            processCmd();
+            processCmd(true);
             client.print(
               "HTTP/1.1 200 OK\r\n"
               "Access-Control-Allow-Origin: *\r\n"              
