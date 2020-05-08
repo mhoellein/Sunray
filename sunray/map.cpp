@@ -37,6 +37,7 @@ bool Map::setWaypoint(int idx, int count, float x, float y){
   }*/   
   
   if ((idx >= MAX_POINTS) || (count > MAX_POINTS)) return false;  
+  if ((idx != 0) && (idx != mowPointsCount)) return false;
   targetPointIdx = 0;  
   points[idx].x = x;
   points[idx].y = y;
