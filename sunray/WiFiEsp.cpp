@@ -60,7 +60,14 @@ int WiFiEspClass::beginAP(const char* ssid, uint8_t channel, const char* pwd, ui
 	if(apOnly)
         espMode = 2;
     else
-        espMode = 3;
+        //espMode = 3;
+        espMode = 1;
+    /*Wenn der ESP sich auf ein vorhandenes WLAN verbinden soll wäre eigentlich 1 besser als 3. 
+    So würde sich der ESP zwar mit dem WLAN verbinden aber zusätzlich noch ein eigenes Netzwerk aufspannen. 
+    Da nur eine Antenne und Funkmodul vorhanden ist liegt dieses immer auf dem selben Kanal wie das heimische WLAN. 
+    Normalerweise versucht man zuhause ja immer einen Kanal zu wählen auf dem möglichst wenig benachbarte Netze 
+    funken um gegenseitige Störungen zu vermeiden. Ich habe die Erfahrung gemacht dass das die Reichweite der 
+    Module auch erhöht.*/
     
     if (EspDrv::wifiStartAP(ssid, pwd, channel, enc, espMode))
 		return WL_CONNECTED;

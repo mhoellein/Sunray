@@ -15,33 +15,45 @@
 
 void Map::begin(){
   wayMode = WAY_MOW;
-  targetWaypointIdx = 0;
-  waypointsCount = 0;
+  targetPointIdx = 0;
+  mowPointsCount = 0;
   for (int i=0; i < MAX_POINTS; i++){
-    waypoints[i].x=0;
-    waypoints[i].y=0;
+    points[i].x=0;
+    points[i].y=0;
   }  
 }
 
 bool Map::setWaypoint(int idx, int count, float x, float y){
+//bool Map::setWaypoint(WayType type, int idx, int subIdx, int count, float x, float y){
+  /*switch (type){
+    case WAY_PERIMETER:      
+      break;
+    case WAY_WAY_EXCLUSION:      
+      break;
+    case WAY_WAY_MOW:      
+      break;
+    case WAY_WAY_DOCK:    
+      break;
+  }*/   
+  
   if ((idx >= MAX_POINTS) || (count > MAX_POINTS)) return false;  
-  targetWaypointIdx = 0;  
-  waypoints[idx].x = x;
-  waypoints[idx].y = y;
-  waypointsCount = count;  
+  targetPointIdx = 0;  
+  points[idx].x = x;
+  points[idx].y = y;
+  mowPointsCount = count;  
   return true;
 }
 
 // 1.0 = 100%
 void Map::setTargetWaypointPercent(float perc){
-  targetWaypointIdx = (int)( ((float)waypointsCount) * perc);
-  if (targetWaypointIdx >= waypointsCount) {
-    targetWaypointIdx = waypointsCount-1;
+  targetPointIdx = (int)( ((float)mowPointsCount) * perc);
+  if (targetPointIdx >= mowPointsCount) {
+    targetPointIdx = mowPointsCount-1;
   }
 }
 
 void Map::run(){
-  targetPoint = waypoints[targetWaypointIdx];  
+  targetPoint = points[targetPointIdx];  
 }
 
 float Map::distanceToTargetPoint(float stateX, float stateY){  
@@ -52,18 +64,18 @@ float Map::distanceToTargetPoint(float stateX, float stateY){
 }
 
 bool Map::nextWaypointAvailable(){
-  return (targetWaypointIdx < waypointsCount);
+  return (targetPointIdx < mowPointsCount);
 }
 
 bool Map::nextWaypoint(){
-  if (targetWaypointIdx+1 < waypointsCount){
+  if (targetPointIdx+1 < mowPointsCount){
     // next waypoint
     lastTargetPoint = targetPoint;
-    targetWaypointIdx++;
+    targetPointIdx++;
     return true;
   } else {
     // finish        
-    targetWaypointIdx=0;    
+    targetPointIdx=0;    
     return false;
   }       
 }

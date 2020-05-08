@@ -12,11 +12,12 @@
 #include <Arduino.h>
 
 #define MAX_POINTS 5000
-#define MAX_DOCK_POINTS 50
+#define MAX_EXCLUSIONS 100
 
-// selected way mode
-enum WayMode {WAY_DOCK, WAY_FREE_PT, WAY_MOW} ;
-typedef enum WayMode WayMode;
+
+// waypoint type
+enum WayType {WAY_PERIMETER, WAY_EXCLUSION, WAY_MOW, WAY_DOCK, WAY_FREE_PT};
+typedef enum WayType WayType;
 
 
 struct pt_t {
@@ -31,15 +32,24 @@ class Map
 {
   public:    
     // current way mode
-    WayMode wayMode;
+    WayType wayMode;
     // the line defined by (lastTargetPoint, targetPoint) is the current line to mow
     pt_t targetPoint; // target point
     pt_t lastTargetPoint; // last target point
     // all lines to mow are stored as a sequence of waypoints
-    int targetWaypointIdx; // next waypoint in waypoint list
-    int waypointsCount;
-    pt_t waypoints[MAX_POINTS]; // mowing waypoints
-    pt_t dockPoints[MAX_DOCK_POINTS];  // waypoints into docking station     
+    int targetPointIdx; // next waypoint in waypoint list
+    
+    int perimeterPointsCount;    
+    int exclusionPointsCount;        
+    int mowPointsCount;
+    int dockPointsCount;
+        
+    short perimeterStartIdx; // perimeter start index into points    
+    short exclusionStartIdx[MAX_EXCLUSIONS]; // exclusion start index into points    
+    short mowStartIdx; // mowing start index into points    
+    short dockStartIdx;  // docking start index into points
+    pt_t points[MAX_POINTS]; // points list (perimeter, exclusions, mowing, docking)
+    
     void begin();    
     void run();    
     // set waypoint coordinate

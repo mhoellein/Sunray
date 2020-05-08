@@ -53,6 +53,7 @@ bool absolutePosSource = false;
 double absolutePosSourceLon = 0;
 double absolutePosSourceLat = 0;
 bool finishAndRestart = false;
+bool resetLastPos = true;
 
 UBLOX::SolType lastSolution = UBLOX::SOL_INVALID;    
 unsigned long nextStatTime = 0;
@@ -366,26 +367,31 @@ void computeRobotState(){
     posE = gps.relPosE;     
   }   
   
+  if (fabs(motor.linearSpeedSet) < 0.001){       
+    resetLastPos = true;
+  }
+  
   if ((gps.solutionAvail) 
       && ((gps.solution == UBLOX::SOL_FIXED) || (gps.solution == UBLOX::SOL_FLOAT))  ){
     gps.solutionAvail = false;        
     stateGroundSpeed = 0.5 * stateGroundSpeed + 0.5 * gps.groundSpeed;    
     //CONSOLE.println(stateGroundSpeed);
     float dist = sqrt( sq(posN-lastPosN)+sq(posE-lastPosE) );
-    if (dist > 0.3){
+    if ((dist > 0.3) || (resetLastPos)){
+      resetLastPos = false;
       lastPosN = posN;
       lastPosE = posE;
     } else if (dist > 0.1){      
-      if (abs(motor.linearSpeedSet) > 0){       
+      if (fabs(motor.linearSpeedSet) > 0){       
         stateDeltaGPS = scalePI(atan2(posN-lastPosN, posE-lastPosE));    
         //stateDeltaGPS = scalePI(2*PI-gps.heading+PI/2);
         float diffDelta = distancePI(stateDelta, stateDeltaGPS);                 
-        if (abs(diffDelta/PI*180) > 45){
+        if (fabs(diffDelta/PI*180) > 45){
           stateDelta = stateDeltaGPS;
         } else {
           // delta fusion
           stateDeltaGPS = scalePIangles(stateDeltaGPS, stateDelta);
-          stateDelta = fusionPI(0.9, stateDelta, stateDeltaGPS);               
+          stateDelta = scalePI(fusionPI(0.9, stateDelta, stateDeltaGPS));               
         }
       }
       lastPosN = posN;
@@ -437,12 +443,12 @@ void controlRobotVelocity(){
       float dX = target.x - stateX;
       float dY = target.y - stateY;
       float targetDist = sqrt( sq(dX) + sq(dY) );    
-      float targetDelta = atan2(dY, dX);   
+      float targetDelta = scalePI(atan2(dY, dX));         
       targetDelta = scalePIangles(targetDelta, stateDelta);                  
       float diffDelta = distancePI(stateDelta, targetDelta);                         
       float lateralError = distanceLine(stateX, stateY, lastTarget.x, lastTarget.y, target.x, target.y);      
               
-      if (abs(diffDelta/PI*180.0) > 20){
+      if (fabs(diffDelta)/PI*180.0 > 20){
         // angular control (if angle to far away, rotate to next waypoint)
         linear = 0;
         angular = 0.5;        

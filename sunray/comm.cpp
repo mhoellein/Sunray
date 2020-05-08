@@ -209,7 +209,7 @@ void cmdSummary(){
   s += ",";
   s += stateOp;
   s += ",";
-  s += maps.targetWaypointIdx;
+  s += maps.targetPointIdx;
   s += ",";
   s += (millis() - gps.dgpsAge)/1000.0;
   s += ",";
@@ -393,7 +393,7 @@ void outputConsole(){
     CONSOLE.print(" volt=");
     CONSOLE.print(battery.batteryVoltage);
     CONSOLE.print(" wpts=");
-    CONSOLE.print(maps.waypointsCount);
+    CONSOLE.print(maps.mowPointsCount);
     CONSOLE.print(" x=");
     CONSOLE.print(stateX);
     CONSOLE.print(" y=");
