@@ -31,6 +31,7 @@ enum Sensor {
       SENS_OBSTACLE,
       SENS_GPS_FIX_TIMEOUT,
       SENS_IMU_TIMEOUT,
+      SENS_IMU_TILT,
 };
 
 extern OperationType stateOp; // operation

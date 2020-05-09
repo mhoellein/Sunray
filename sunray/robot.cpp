@@ -242,9 +242,20 @@ void readIMU(){
     {      
       // computeEulerAngles can be used -- after updating the
       // quaternion values -- to estimate roll, pitch, and yaw
-      imu.computeEulerAngles();
-      //CONSOLE.print("imu data: ");
-      //CONSOLE.println(imu.yaw);
+      imu.computeEulerAngles();      
+      #ifdef ENABLE_TILT_DETECTION
+        if ((fabs(scale180(imu.roll)) > 60) || (fabs(scale180(imu.pitch)) > 100)){
+          CONSOLE.println("ERROR IMU tilt");
+          CONSOLE.print("imu data: ");
+          CONSOLE.print(scale180(imu.yaw));
+          CONSOLE.print(",");
+          CONSOLE.print(scale180(imu.pitch));
+          CONSOLE.print(",");
+          CONSOLE.println(scale180(imu.roll));
+          stateSensor = SENS_IMU_TILT;
+          setOperation(OP_ERROR);
+        }            
+      #endif
       stateDeltaIMU = distancePI(imu.yaw/180.0*PI, lastIMUYaw);  
       lastIMUYaw = imu.yaw/180.0*PI;      
       imuDataTimeout = millis() + 10000;

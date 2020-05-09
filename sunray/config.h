@@ -45,6 +45,9 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 //#define MPU9150
 #define MPU9250   // also choose this for MPU9255
 
+// should the mower turn off if IMU is tilt over? (yes: uncomment line, no: comment line)
+#define ENABLE_TILT_DETECTION  1
+
 // --------- serial monitor output (CONSOLE) ------------------------
 // which Arduino Due USB port do you want to your for serial monitor output (CONSOLE)?
 // Arduino Due native USB port  => choose SerialUSB
