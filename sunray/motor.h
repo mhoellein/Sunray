@@ -20,6 +20,7 @@ class Motor {
     int wheelDiameter;   // wheel diameter (mm)
     int ticksPerRevolution; // ticks per revolution
     float ticksPerCm;  // ticks per cm
+    bool toggleMowDir; // toggle mowing motor direction each mow motor start?    
     bool motorLeftSwapDir;
     bool motorRightSwapDir;
     bool motorError;
@@ -42,6 +43,7 @@ class Motor {
     float motorRightRpmSet;    
     float motorLeftRpmCurr;
     float motorRightRpmCurr;
+    bool motorMowForwardSet; 
     float motorMowPWMSet; 
     float motorMowPWMCurr; 
     int motorLeftPWMCurr;

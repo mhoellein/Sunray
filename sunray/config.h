@@ -84,6 +84,11 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define TICKS_PER_REVOLUTION  1050 / 2    // odometry ticks per wheel revolution 
 
 
+// ----- mowing motor -------------------------------------------------
+// should the direction of mowing motor toggle each start? (yes: true, no: false)
+#define MOW_TOGGLE_DIR       true
+//#define MOW_TOGGLE_DIR       false
+
 
 // ------ WIFI module (ESP8266 ESP-01) --------------------------------
 // WARNING: WIFI is highly experimental - not for productive use (yet)

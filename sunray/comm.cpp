@@ -54,7 +54,7 @@ void cmdControl(){
           if (intValue >= 0) finishAndRestart = (intValue == 1);
       } else if (counter == 6){
           if (floatValue >= 0) maps.setTargetWaypointPercent(floatValue);
-      }
+      } 
       counter++;
       lastCommaIdx = idx;
     }    

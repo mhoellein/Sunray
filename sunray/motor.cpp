@@ -89,6 +89,8 @@ void Motor::begin() {
   motorLeftRpmSet = 0;
   motorRightRpmSet = 0;
   motorMowPWMSet = 0;
+  motorMowForwardSet = true;
+  toggleMowDir = MOW_TOGGLE_DIR;
 
   lastControlTime = 0;
   motorLeftTicks =0;  
@@ -168,7 +170,14 @@ void Motor::setLinearAngularSpeed(float linear, float angular){
 
 void Motor::setMowState(bool switchOn){
   if (switchOn){
-    motorMowPWMSet = pwmMaxMow;  
+    if (toggleMowDir){
+      // toggle mowing motor direction each mow motor start
+      motorMowForwardSet = !motorMowForwardSet;
+      if (motorMowForwardSet) motorMowPWMSet = pwmMaxMow;  
+        else motorMowPWMSet = -pwmMaxMow;  
+    }  else  {      
+      motorMowPWMSet = pwmMaxMow;  
+    }
   } else {
     motorMowPWMSet = 0;  
     motorMowPWMCurr = 0;
