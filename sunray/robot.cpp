@@ -516,7 +516,7 @@ void controlRobotVelocity(){
       }
       if (maps.distanceToTargetPoint(stateX, stateY) < 0.1){
         // next waypoint
-        if (!maps.nextWaypoint()){
+        if (!maps.nextPoint()){
           // finish        
           CONSOLE.println("mowing finished!");
           if (!finishAndRestart){
@@ -580,7 +580,7 @@ void setOperation(OperationType op){
       motor.setMowState(false);
       break;
     case OP_MOW:      
-      if (maps.nextWaypointAvailable()) {
+      if (maps.nextPointAvailable()) {
         resetMotionMeasurement();        
         maps.setLastTargetPoint(stateX, stateY);        
         stateSensor = SENS_NONE;

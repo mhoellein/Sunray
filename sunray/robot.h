@@ -16,13 +16,14 @@
 #include "WiFiEsp.h"
 
 
-#define VER "Ardumower Sunray,1.0.33"
+#define VER "Ardumower Sunray,1.0.34"
 
 enum OperationType {
       OP_IDLE,      
-      OP_MOW,      
+      OP_MOW,            
       OP_CHARGE,      
-      OP_ERROR,            
+      OP_ERROR,    
+      OP_DOCK,            
 };    
 
 enum Sensor {

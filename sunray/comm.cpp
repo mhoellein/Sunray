@@ -53,7 +53,7 @@ void cmdControl(){
       } else if (counter == 5){
           if (intValue >= 0) finishAndRestart = (intValue == 1);
       } else if (counter == 6){
-          if (floatValue >= 0) maps.setTargetWaypointPercent(floatValue);
+          if (floatValue >= 0) maps.setMowingPointPercent(floatValue);
       } 
       counter++;
       lastCommaIdx = idx;
@@ -128,7 +128,7 @@ void cmdWaypoint(){
           x = floatValue;
       } else if (counter == 3){
           y = floatValue;
-          if (!maps.setWaypoint(widx, widx+1, x, y)){
+          if (!maps.setPoint(widx, x, y)){
             success = false;
             break;
           }          
@@ -153,6 +153,70 @@ void cmdWaypoint(){
     cmdAnswer(s);       
   }  
 }
+
+
+// request waypoints count
+void cmdWayCount(){
+  if (cmd.length()<6) return;  
+  int counter = 0;
+  int lastCommaIdx = 0;
+  for (int idx=0; idx < cmd.length(); idx++){
+    char ch = cmd[idx];
+    //Serial.print("ch=");
+    //Serial.println(ch);
+    if ((ch == ',') || (idx == cmd.length()-1)){            
+      float intValue = cmd.substring(lastCommaIdx+1, idx+1).toInt();
+      float floatValue = cmd.substring(lastCommaIdx+1, idx+1).toFloat();      
+      if (counter == 1){                            
+          if (!maps.setWayCount(WAY_PERIMETER, intValue)) return;                
+      } else if (counter == 2){
+          if (!maps.setWayCount(WAY_EXCLUSION, intValue)) return;                
+      } else if (counter == 3){
+          if (!maps.setWayCount(WAY_DOCK, intValue)) return;                
+      } else if (counter == 4){
+          if (!maps.setWayCount(WAY_MOW, intValue)) return;                
+      } else if (counter == 5){
+          if (!maps.setWayCount(WAY_FREE, intValue)) return;                
+      } 
+      counter++;
+      lastCommaIdx = idx;
+    }    
+  }        
+  String s = F("N");    
+  cmdAnswer(s);         
+  maps.dump();
+}
+
+
+// request exclusion count
+void cmdExclusionCount(){
+  if (cmd.length()<6) return;  
+  int counter = 0;
+  int lastCommaIdx = 0;
+  int widx=0;  
+  for (int idx=0; idx < cmd.length(); idx++){
+    char ch = cmd[idx];
+    //Serial.print("ch=");
+    //Serial.println(ch);
+    if ((ch == ',') || (idx == cmd.length()-1)){            
+      float intValue = cmd.substring(lastCommaIdx+1, idx+1).toInt();
+      float floatValue = cmd.substring(lastCommaIdx+1, idx+1).toFloat();
+      if (counter == 1){                            
+          widx = intValue;
+      } else if (counter == 2){
+          if (!maps.setExclusionLength(widx, intValue)) return;          
+          widx++;
+          counter = 1;
+      } 
+      counter++;
+      lastCommaIdx = idx;
+    }    
+  }        
+  String s = F("X,");
+  s += widx;              
+  cmdAnswer(s);         
+}
+
 
 // request position mode
 void cmdPosMode(){
@@ -209,11 +273,15 @@ void cmdSummary(){
   s += ",";
   s += stateOp;
   s += ",";
-  s += maps.targetPointIdx;
+  s += maps.mowingPointIdx;
   s += ",";
   s += (millis() - gps.dgpsAge)/1000.0;
   s += ",";
   s += stateSensor;
+  s += ",";
+  s += maps.targetPoint.x;
+  s += ",";
+  s += maps.targetPoint.y;  
   cmdAnswer(s);  
 }
 
@@ -244,25 +312,32 @@ void cmdStats(){
 void processCmd(bool checkCrc){
   cmdResponse = "";      
   if (cmd.length() < 4) return;
-  if (checkCrc){
-    byte expectedCrc = 0;
-    int idx = cmd.lastIndexOf(',');
-    if (idx < 1){
+  byte expectedCrc = 0;
+  int idx = cmd.lastIndexOf(',');
+  if (idx < 1){
+    if (checkCrc){
       CONSOLE.println("CRC ERROR");
       return;
-    } 
+    }
+  } else {
     for (int i=0; i < idx; i++) expectedCrc += cmd[i];  
     String s = cmd.substring(idx+1, idx+5);
     int crc = strtol(s.c_str(), NULL, 16);  
     if (expectedCrc != crc){
-      CONSOLE.print("CRC ERROR");
-      CONSOLE.print(crc,HEX);
-      CONSOLE.print(",");
-      CONSOLE.print(expectedCrc,HEX);
-      CONSOLE.println();
-      return;
-    }  
-  }
+      if (checkCrc){
+        CONSOLE.print("CRC ERROR");
+        CONSOLE.print(crc,HEX);
+        CONSOLE.print(",");
+        CONSOLE.print(expectedCrc,HEX);
+        CONSOLE.println();
+        return;  
+      }      
+    } else {
+      // remove CRC
+      cmd = cmd.substring(0, idx);
+      //CONSOLE.println(cmd);
+    }    
+  }     
   if (cmd[0] != 'A') return;
   if (cmd[1] != 'T') return;
   if (cmd[2] != '+') return;
@@ -270,6 +345,8 @@ void processCmd(bool checkCrc){
   if (cmd[3] == 'M') cmdMotor();
   if (cmd[3] == 'C') cmdControl();
   if (cmd[3] == 'W') cmdWaypoint();
+  if (cmd[3] == 'N') cmdWayCount();
+  if (cmd[3] == 'X') cmdExclusionCount();
   if (cmd[3] == 'V') cmdVersion();  
   if (cmd[3] == 'P') cmdPosMode();  
   if (cmd[3] == 'T') cmdStats();
@@ -392,8 +469,10 @@ void outputConsole(){
     CONSOLE.print (freeMemory ());
     CONSOLE.print(" volt=");
     CONSOLE.print(battery.batteryVoltage);
-    CONSOLE.print(" wpts=");
-    CONSOLE.print(maps.mowPointsCount);
+    CONSOLE.print(" tg=");
+    CONSOLE.print(maps.targetPoint.x);
+    CONSOLE.print(",");
+    CONSOLE.print(maps.targetPoint.y);
     CONSOLE.print(" x=");
     CONSOLE.print(stateX);
     CONSOLE.print(" y=");

@@ -15,46 +15,99 @@
 
 void Map::begin(){
   wayMode = WAY_MOW;
-  targetPointIdx = 0;
+  mowingPointIdx = 0;
   mowPointsCount = 0;
+  perimeterPointsCount = 0;
+  exclusionPointsCount = 0;
+  dockPointsCount = 0;
+  freePointsCount = 0;
+  storeIdx = 0;
   for (int i=0; i < MAX_POINTS; i++){
     points[i].x=0;
     points[i].y=0;
   }  
 }
 
-bool Map::setWaypoint(int idx, int count, float x, float y){
-//bool Map::setWaypoint(WayType type, int idx, int subIdx, int count, float x, float y){
-  /*switch (type){
-    case WAY_PERIMETER:      
-      break;
-    case WAY_WAY_EXCLUSION:      
-      break;
-    case WAY_WAY_MOW:      
-      break;
-    case WAY_WAY_DOCK:    
-      break;
-  }*/   
-  
-  if ((idx >= MAX_POINTS) || (count > MAX_POINTS)) return false;  
-  if ((idx != 0) && (idx != mowPointsCount)) return false;
-  targetPointIdx = 0;  
+void Map::dump(){
+  CONSOLE.println("map dump");
+  CONSOLE.print("perimeter: ");
+  CONSOLE.println(perimeterPointsCount);
+  CONSOLE.print("exclusions: ");
+  CONSOLE.println(exclusionPointsCount);  
+  CONSOLE.print("dock: ");
+  CONSOLE.println(dockPointsCount);
+  CONSOLE.print("mow: ");  
+  CONSOLE.println(mowPointsCount);
+  CONSOLE.print("first mow point:");
+  CONSOLE.print(points[mowStartIdx].x);
+  CONSOLE.print(",");
+  CONSOLE.println(points[mowStartIdx].y);
+  CONSOLE.print("free: ");
+  CONSOLE.println(freePointsCount);
+}
+
+bool Map::setPoint(int idx, float x, float y){  
+  if (idx >= MAX_POINTS) return false;  
+  if ((idx != 0) && (idx != (storeIdx+1))) return false;
+  mowingPointIdx = 0;  
   points[idx].x = x;
   points[idx].y = y;
-  mowPointsCount = count;  
+  storeIdx = idx;
   return true;
 }
 
+
+bool Map::setWayCount(WayType type, int count){
+  switch (type){
+    case WAY_PERIMETER:      
+      perimeterPointsCount = count;      
+      break;
+    case WAY_EXCLUSION:      
+      exclusionPointsCount = count;      
+      break;
+    case WAY_DOCK:    
+      dockPointsCount = count;      
+    case WAY_MOW:      
+      mowPointsCount = count;            
+      break;    
+    case WAY_FREE:
+      freePointsCount = count;
+      break;
+    default: 
+      return false;       
+  }
+  dockStartIdx = perimeterPointsCount + exclusionPointsCount;
+  mowStartIdx = dockStartIdx + dockPointsCount;
+  freeStartIdx = mowStartIdx + mowPointsCount;
+}
+
+
+bool Map::setExclusionLength(int idx, int len){
+  if (idx >= MAX_EXCLUSIONS) return false;
+  int prevStartIdx = perimeterPointsCount;
+  if (idx > 0) prevStartIdx = exclusionStartIdx[idx-1];          
+  exclusionCount = idx + 1;
+  exclusionStartIdx[idx] = prevStartIdx + len;            
+  exclusionLength[idx] = len;
+  //CONSOLE.print("exclusion ");
+  //CONSOLE.print(idx);
+  //CONSOLE.print(": ");
+  //CONSOLE.println(exclusionLength[idx]);   
+  return true;
+}
+
+
 // 1.0 = 100%
-void Map::setTargetWaypointPercent(float perc){
-  targetPointIdx = (int)( ((float)mowPointsCount) * perc);
-  if (targetPointIdx >= mowPointsCount) {
-    targetPointIdx = mowPointsCount-1;
+void Map::setMowingPointPercent(float perc){
+  mowingPointIdx = (int)( ((float)mowPointsCount) * perc);
+  if (mowingPointIdx >= mowPointsCount) {
+    mowingPointIdx = mowPointsCount-1;
   }
 }
 
 void Map::run(){
-  targetPoint = points[targetPointIdx];  
+  targetPoint = points[mowStartIdx + mowingPointIdx];  
+  percentCompleted = (((float)mowingPointIdx) / ((float)mowPointsCount) * 100.0);
 }
 
 float Map::distanceToTargetPoint(float stateX, float stateY){  
@@ -64,19 +117,19 @@ float Map::distanceToTargetPoint(float stateX, float stateY){
   return targetDist;
 }
 
-bool Map::nextWaypointAvailable(){
-  return (targetPointIdx < mowPointsCount);
+bool Map::nextPointAvailable(){
+  return (mowingPointIdx < mowPointsCount);
 }
 
-bool Map::nextWaypoint(){
-  if (targetPointIdx+1 < mowPointsCount){
+bool Map::nextPoint(){
+  if (mowingPointIdx+1 < mowPointsCount){
     // next waypoint
     lastTargetPoint = targetPoint;
-    targetPointIdx++;
+    mowingPointIdx++;
     return true;
   } else {
     // finish        
-    targetPointIdx=0;    
+    mowingPointIdx=0;    
     return false;
   }       
 }

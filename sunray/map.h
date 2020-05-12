@@ -16,7 +16,7 @@
 
 
 // waypoint type
-enum WayType {WAY_PERIMETER, WAY_EXCLUSION, WAY_MOW, WAY_DOCK, WAY_FREE_PT};
+enum WayType {WAY_PERIMETER, WAY_EXCLUSION, WAY_DOCK, WAY_MOW, WAY_FREE};
 typedef enum WayType WayType;
 
 
@@ -36,34 +36,44 @@ class Map
     // the line defined by (lastTargetPoint, targetPoint) is the current line to mow
     pt_t targetPoint; // target point
     pt_t lastTargetPoint; // last target point
-    // all lines to mow are stored as a sequence of waypoints
-    int targetPointIdx; // next waypoint in waypoint list
+    int mowingPointIdx; // next mowing point in waypoint list
+    int percentCompleted; 
     
     int perimeterPointsCount;    
     int exclusionPointsCount;        
-    int mowPointsCount;
     int dockPointsCount;
+    int mowPointsCount;    
+    int freePointsCount;
         
     short perimeterStartIdx; // perimeter start index into points    
-    short exclusionStartIdx[MAX_EXCLUSIONS]; // exclusion start index into points    
-    short mowStartIdx; // mowing start index into points    
+    short exclusionCount;    // number exclusions      
+    short exclusionLength[MAX_EXCLUSIONS]; // number points in exclusion
+    short exclusionStartIdx[MAX_EXCLUSIONS]; // exclusion start index into points        
     short dockStartIdx;  // docking start index into points
-    pt_t points[MAX_POINTS]; // points list (perimeter, exclusions, mowing, docking)
+    short mowStartIdx; // mowing start index into points    
+    short freeStartIdx;  // free points start index into points
+    pt_t points[MAX_POINTS]; // points list in this order: ( perimeter, exclusions, docking, mowing, free )
+    short storeIdx; 
     
     void begin();    
     void run();    
     // set waypoint coordinate
-    bool setWaypoint(int idx, int count, float x, float y);    
-    // choose target point (0..100%) from waypoint list
-    void setTargetWaypointPercent(float perc);
+    bool setPoint(int idx, float x, float y);    
+    // set number points for waytype
+    bool setWayCount(WayType type, int count);
+    // set number points for exclusion 
+    bool setExclusionLength(int idx, int len);
+    // choose mowing index point (0..100%) from waypoint list
+    void setMowingPointPercent(float perc);
     // set last target point
     void setLastTargetPoint(float stateX, float stateY);
     // distance to target waypoint
     float distanceToTargetPoint(float stateX, float stateY);    
     // go to next waypoint
-    bool nextWaypoint();
+    bool nextPoint();
     // next waypoint available?
-    bool nextWaypointAvailable();
+    bool nextPointAvailable();
+    void dump();
   private:
     
 };
