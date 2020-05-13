@@ -99,8 +99,8 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 // https://wiki.ardumower.de/index.php?title=Ardumower_Sunray#Bluetooth_BLE_UART_module
 
 #define START_AP  false             // should WIFI module start its own access point? 
-#define WIFI_SSID "GRAUNETE"        // your network SSID (name)
-#define WIFI_PASS "crackme99_now"   // your network password
+#define WIFI_SSID "WIFIname"        // your network SSID (name)
+#define WIFI_PASS "WIFIpassword"    // your network password
 #define WIFI_IP   192,168,2,15      // choose IP e.g. 192.168.4.1  (comment out for dynamic IP/DHCP)
 
 
