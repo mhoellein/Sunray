@@ -77,11 +77,18 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define WHEEL_BASE_CM         36         // wheel-to-wheel distance (cm)        
 #define WHEEL_DIAMETER        250        // wheel diameter (mm)                 
 
+// choose this ticks per revolution for the 36mm diameter motor (blue cap)
+// https://www.marotronics.de/2-x-36er-DC-Planeten-Getriebemotor-24-Volt-mit-HallIC-30-33-RPM-8mm-Welle
+// #define TICKS_PER_REVOLUTION  1310 / 2    // odometry ticks per wheel revolution 
+
 // choose this ticks per revolution for the newer 42mm diameter motor
-//#define TICKS_PER_REVOLUTION  696 / 2    // odometry ticks per wheel revolution 
+// https://www.marotronics.de/MA42-DC-Planeten-Getriebemotor-24-Volt-mit-HallIC-30-33-RPM-8mm-Welle-ab-2-Stueck-Staffelpreis
+// #define TICKS_PER_REVOLUTION  696 / 2    // odometry ticks per wheel revolution 
 
 // choose this ticks per revolution for the older 42mm diameter motor
+// https://wiki.ardumower.de/images/d/d6/Ardumower_chassis_inside_ready.jpg
 #define TICKS_PER_REVOLUTION  1050 / 2    // odometry ticks per wheel revolution 
+
 
 
 // ----- mowing motor -------------------------------------------------
