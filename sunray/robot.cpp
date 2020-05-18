@@ -458,8 +458,8 @@ void controlRobotVelocity(){
       float diffDelta = distancePI(stateDelta, targetDelta);                         
       float lateralError = distanceLine(stateX, stateY, lastTarget.x, lastTarget.y, target.x, target.y);      
               
-      if (fabs(diffDelta)/PI*180.0 > 45){
-          // angular control (if angle to far away, rotate to next waypoint)
+      if (fabs(diffDelta)/PI*180.0 > 20){
+        // angular control (if angle to far away, rotate to next waypoint)
         linear = 0;
         angular = 0.5;        
         if (fabs(diffDelta)/PI*180.0 > 45){
@@ -472,13 +472,16 @@ void controlRobotVelocity(){
         }        
         if (rotateLeft) angular *= -1;            
         resetMotionMeasurement();
-      } else {
+      } 
+      else {
         // line control (if angle ok, follow path to next waypoint)                         
         bool straight = maps.nextPointIsStraight();
         if (     ((setSpeed > 0.2) && (maps.distanceToTargetPoint(stateX, stateY) < 0.3) && (!straight))
               || ((linearMotionStartTime != 0) && (millis() < linearMotionStartTime + 3000))              
-           )
-          linear = 0.1; // reduce speed when approaching/leaving waypoints
+           ) 
+        {
+          linear = 0.1; // reduce speed when approaching/leaving waypoints          
+        } 
         else {
           if (gps.solution == UBLOX::SOL_FLOAT)        
             linear = min(setSpeed, 0.1); // reduce speed for float solution
