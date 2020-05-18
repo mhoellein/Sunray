@@ -73,6 +73,8 @@ class Map
     bool nextPoint();
     // next waypoint available?
     bool nextPointAvailable();
+    // next point is straight and not a sharp curve?
+    bool nextPointIsStraight();
     void dump();
   private:
     

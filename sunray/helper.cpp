@@ -75,6 +75,7 @@ float distanceLine(float px, float py, float x1, float y1, float x2, float y2)
   float distToLine = ((y2-y1)*px-(x2-x1)*py+(x2*y1-y2*x1)) / len;
   return distToLine;
 }
+      
 
 // weight fusion (w=0..1) of two radiant values (a,b)
 float fusionPI(float w, float a, float b)
@@ -110,6 +111,15 @@ double deg2rad(double deg) {
 
 double rad2deg(double rad) {
   return (rad * 180 / PI);
+}
+
+
+// compute course (angle in rad) between two points
+float pointsAngle(float x1, float y1, float x2, float y2){
+  float dX = x2 - x1;
+  float dY = y2 - y1;
+  float angle = scalePI(atan2(dY, dX));           
+  return angle;
 }
 
 

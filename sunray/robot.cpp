@@ -1,4 +1,4 @@
-// Ardumower Sunray 
+  // Ardumower Sunray 
 // Copyright (c) 2013-2020 by Alexander Grau, Grau GmbH
 // Licensed GPLv3 for open source use
 // or Grau GmbH Commercial License for commercial use (http://grauonline.de/cms2/?page_id=153)
@@ -450,12 +450,9 @@ void controlRobotVelocity(){
       pt_t target = maps.targetPoint;
       pt_t lastTarget = maps.lastTargetPoint;
       float linear = 1.0;
-      float angular = 0;
-      float dX = target.x - stateX;
-      float dY = target.y - stateY;
-      float targetDist = sqrt( sq(dX) + sq(dY) );    
-      float targetDelta = scalePI(atan2(dY, dX));         
-      targetDelta = scalePIangles(targetDelta, stateDelta);                  
+      float angular = 0;      
+      float targetDelta = pointsAngle(stateX, stateY, target.x, target.y);      
+      targetDelta = scalePIangles(targetDelta, stateDelta);
       float diffDelta = distancePI(stateDelta, targetDelta);                         
       float lateralError = distanceLine(stateX, stateY, lastTarget.x, lastTarget.y, target.x, target.y);      
               
@@ -467,7 +464,8 @@ void controlRobotVelocity(){
         resetMotionMeasurement();
       } else {
         // line control (if angle ok, follow path to next waypoint)                 
-        if (     ((setSpeed > 0.2) && (maps.distanceToTargetPoint(stateX, stateY) < 0.3)) 
+        bool straight = maps.nextPointIsStraight();
+        if (     ((setSpeed > 0.2) && (maps.distanceToTargetPoint(stateX, stateY) < 0.3) && (!straight))
               || ((linearMotionStartTime != 0) && (millis() < linearMotionStartTime + 3000))              
            )
           linear = 0.1; // reduce speed when approaching/leaving waypoints

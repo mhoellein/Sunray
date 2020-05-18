@@ -11,6 +11,7 @@
 #include "map.h"
 #include <Arduino.h>
 #include "config.h"
+#include "helper.h"
 
 
 void Map::begin(){
@@ -115,6 +116,17 @@ float Map::distanceToTargetPoint(float stateX, float stateY){
   float dY = targetPoint.y - stateY;
   float targetDist = sqrt( sq(dX) + sq(dY) );    
   return targetDist;
+}
+
+bool Map::nextPointIsStraight(){
+  if (mowingPointIdx+1 >= mowPointsCount) return false;     
+  pt_t nextPt = points[mowStartIdx + mowingPointIdx+1];  
+  float angleCurr = pointsAngle(lastTargetPoint.x, lastTargetPoint.y, targetPoint.x, targetPoint.y);
+  float angleNext = pointsAngle(targetPoint.x, targetPoint.y, nextPt.x, nextPt.y);
+  angleNext = scalePIangles(angleNext, angleCurr);                    
+  float diffDelta = distancePI(angleCurr, angleNext);                 
+  //CONSOLE.println(fabs(diffDelta)/PI*180.0);
+  return ((fabs(diffDelta)/PI*180.0) <= 20);
 }
 
 bool Map::nextPointAvailable(){

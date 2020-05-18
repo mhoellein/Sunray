@@ -83,11 +83,11 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 
 // choose this ticks per revolution for the newer 42mm diameter motor
 // https://www.marotronics.de/MA42-DC-Planeten-Getriebemotor-24-Volt-mit-HallIC-30-33-RPM-8mm-Welle-ab-2-Stueck-Staffelpreis
-// #define TICKS_PER_REVOLUTION  696 / 2    // odometry ticks per wheel revolution 
+#define TICKS_PER_REVOLUTION  696 / 2    // odometry ticks per wheel revolution 
 
 // choose this ticks per revolution for the older 42mm diameter motor
 // https://wiki.ardumower.de/images/d/d6/Ardumower_chassis_inside_ready.jpg
-#define TICKS_PER_REVOLUTION  1050 / 2    // odometry ticks per wheel revolution 
+//#define TICKS_PER_REVOLUTION  1050 / 2    // odometry ticks per wheel revolution 
 
 
 
@@ -106,8 +106,8 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 // https://wiki.ardumower.de/index.php?title=Ardumower_Sunray#Bluetooth_BLE_UART_module
 
 #define START_AP  false             // should WIFI module start its own access point? 
-#define WIFI_SSID "WIFIname"        // your network SSID (name)
-#define WIFI_PASS "WIFIpassword"    // your network password
+#define WIFI_SSID "GRAUNETE"        // your network SSID (name)
+#define WIFI_PASS "crackme99_now"    // your network password
 #define WIFI_IP   192,168,2,15      // choose IP e.g. 192.168.4.1  (comment out for dynamic IP/DHCP)
 
 

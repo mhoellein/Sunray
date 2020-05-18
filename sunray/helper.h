@@ -33,6 +33,7 @@ float scalePIangles(float setAngle, float currAngle);
 float distance(float x1, float y1, float x2, float y2);
 double deg2rad(double deg);
 double rad2deg(double rad);
+float pointsAngle(float x1, float y1, float x2, float y2);
 double distanceLL(double lat1, double lon1, double lat2, double lon2);
 void relativeLL(double lat1, double lon1, double lat2, double lon2, float &n, float &e);
 
