@@ -54,6 +54,8 @@ double absolutePosSourceLon = 0;
 double absolutePosSourceLat = 0;
 bool finishAndRestart = false;
 bool resetLastPos = true;
+bool rotateLeft = false;
+bool rotateRight = false;
 
 UBLOX::SolType lastSolution = UBLOX::SOL_INVALID;    
 unsigned long nextStatTime = 0;
@@ -456,14 +458,22 @@ void controlRobotVelocity(){
       float diffDelta = distancePI(stateDelta, targetDelta);                         
       float lateralError = distanceLine(stateX, stateY, lastTarget.x, lastTarget.y, target.x, target.y);      
               
-      if (fabs(diffDelta)/PI*180.0 > 20){
-        // angular control (if angle to far away, rotate to next waypoint)
+      if (fabs(diffDelta)/PI*180.0 > 45){
+          // angular control (if angle to far away, rotate to next waypoint)
         linear = 0;
         angular = 0.5;        
-        if (diffDelta < 0) angular *= -1;           
+        if (fabs(diffDelta)/PI*180.0 > 45){
+          rotateLeft = false;  // reset rotate direction
+          rotateRight = false;
+        }
+        if ((!rotateLeft) && (!rotateRight)){ // decide for one rotation direction (and keep it)
+          if (diffDelta < 0) rotateLeft = true;
+            else rotateRight = true;
+        }        
+        if (rotateLeft) angular *= -1;            
         resetMotionMeasurement();
       } else {
-        // line control (if angle ok, follow path to next waypoint)                 
+        // line control (if angle ok, follow path to next waypoint)                         
         bool straight = maps.nextPointIsStraight();
         if (     ((setSpeed > 0.2) && (maps.distanceToTargetPoint(stateX, stateY) < 0.3) && (!straight))
               || ((linearMotionStartTime != 0) && (millis() < linearMotionStartTime + 3000))              
@@ -579,7 +589,7 @@ void setOperation(OperationType op){
       break;
     case OP_MOW:      
       if (maps.nextPointAvailable()) {
-        resetMotionMeasurement();        
+        resetMotionMeasurement();                
         maps.setLastTargetPoint(stateX, stateY);        
         stateSensor = SENS_NONE;
         motor.setMowState(true);        
