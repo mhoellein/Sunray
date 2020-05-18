@@ -461,17 +461,17 @@ void controlRobotVelocity(){
       if (fabs(diffDelta)/PI*180.0 > 20){
         // angular control (if angle to far away, rotate to next waypoint)
         linear = 0;
-        angular = 0.5;        
-        if (fabs(diffDelta)/PI*180.0 > 45){
-          rotateLeft = false;  // reset rotate direction
-          rotateRight = false;
-        }
+        angular = 0.5;               
         if ((!rotateLeft) && (!rotateRight)){ // decide for one rotation direction (and keep it)
           if (diffDelta < 0) rotateLeft = true;
             else rotateRight = true;
         }        
         if (rotateLeft) angular *= -1;            
         resetMotionMeasurement();
+        if (fabs(diffDelta)/PI*180.0 < 90){
+          rotateLeft = false;  // reset rotate direction
+          rotateRight = false;
+        }
       } 
       else {
         // line control (if angle ok, follow path to next waypoint)                         
