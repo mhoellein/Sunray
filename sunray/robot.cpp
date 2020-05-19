@@ -360,6 +360,10 @@ void calcStats(){
 
 
 // compute robot state (x,y,delta)
+// uses complementary filter ( https://gunjanpatel.wordpress.com/2016/07/07/complementary-filter-design/ )
+// to fusion GPS heading (long-term) and IMU heading (short-term)
+// with IMU: heading (stateDelta) is computed by gyro (stateDeltaIMU)
+// without IMU: heading (stateDelta) is computed by odometry (deltaOdometry)
 void computeRobotState(){  
   long leftDelta = motor.motorLeftTicks-stateLeftTicks;
   long rightDelta = motor.motorRightTicks-stateRightTicks;  
