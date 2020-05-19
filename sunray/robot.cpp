@@ -389,9 +389,10 @@ void computeRobotState(){
   }
   
   if ((gps.solutionAvail) 
-      && ((gps.solution == UBLOX::SOL_FIXED) || (gps.solution == UBLOX::SOL_FLOAT))  ){
+      && ((gps.solution == UBLOX::SOL_FIXED) || (gps.solution == UBLOX::SOL_FLOAT))  )
+  {
     gps.solutionAvail = false;        
-    stateGroundSpeed = 0.5 * stateGroundSpeed + 0.5 * gps.groundSpeed;    
+    stateGroundSpeed = 0.9 * stateGroundSpeed + 0.1 * gps.groundSpeed;    
     //CONSOLE.println(stateGroundSpeed);
     float distGPS = sqrt( sq(posN-lastPosN)+sq(posE-lastPosE) );
     if ((distGPS > 0.3) || (resetLastPos)){
@@ -427,7 +428,8 @@ void computeRobotState(){
       stateX = posE;
       stateY = posN;        
     }
-  } else {     
+  } 
+  else {     
     // odometry
     stateX += distOdometry/100.0 * cos(stateDelta);
     stateY += distOdometry/100.0 * sin(stateDelta);        

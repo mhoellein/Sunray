@@ -83,11 +83,11 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 
 // choose this ticks per revolution for the newer 42mm diameter motor
 // https://www.marotronics.de/MA42-DC-Planeten-Getriebemotor-24-Volt-mit-HallIC-30-33-RPM-8mm-Welle-ab-2-Stueck-Staffelpreis
-#define TICKS_PER_REVOLUTION  696 / 2    // odometry ticks per wheel revolution 
+// #define TICKS_PER_REVOLUTION  696 / 2    // odometry ticks per wheel revolution 
 
 // choose this ticks per revolution for the older 42mm diameter motor
 // https://wiki.ardumower.de/images/d/d6/Ardumower_chassis_inside_ready.jpg
-//#define TICKS_PER_REVOLUTION  1050 / 2    // odometry ticks per wheel revolution 
+#define TICKS_PER_REVOLUTION  1050 / 2    // odometry ticks per wheel revolution 
 
 
 
