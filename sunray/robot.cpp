@@ -372,7 +372,7 @@ void computeRobotState(){
     
   float distLeft = ((float)leftDelta) / ((float)motor.ticksPerCm);
   float distRight = ((float)rightDelta) / ((float)motor.ticksPerCm);  
-  float dist  = (distLeft + distRight) / 2.0;
+  float distOdometry = (distLeft + distRight) / 2.0;
   float deltaOdometry = -(distLeft - distRight) / motor.wheelBaseCm;    
   
   float posN = 0;
@@ -393,20 +393,21 @@ void computeRobotState(){
     gps.solutionAvail = false;        
     stateGroundSpeed = 0.5 * stateGroundSpeed + 0.5 * gps.groundSpeed;    
     //CONSOLE.println(stateGroundSpeed);
-    float dist = sqrt( sq(posN-lastPosN)+sq(posE-lastPosE) );
-    if ((dist > 0.3) || (resetLastPos)){
+    float distGPS = sqrt( sq(posN-lastPosN)+sq(posE-lastPosE) );
+    if ((distGPS > 0.3) || (resetLastPos)){
       resetLastPos = false;
       lastPosN = posN;
       lastPosE = posE;
-    } else if (dist > 0.1){      
+    } else if (distGPS > 0.1){      
       if (fabs(motor.linearSpeedSet) > 0){       
         stateDeltaGPS = scalePI(atan2(posN-lastPosN, posE-lastPosE));    
         //stateDeltaGPS = scalePI(2*PI-gps.heading+PI/2);
         float diffDelta = distancePI(stateDelta, stateDeltaGPS);                 
-        if (fabs(diffDelta/PI*180) > 45){
+        if (fabs(diffDelta/PI*180) > 45){ // IMU-based heading too far away => use GPS heading
           stateDelta = stateDeltaGPS;
+          stateDeltaIMU = 0;
         } else {
-          // delta fusion
+          // delta fusion (complementary filter, see above comment)
           stateDeltaGPS = scalePIangles(stateDeltaGPS, stateDelta);
           stateDelta = scalePI(fusionPI(0.9, stateDelta, stateDeltaGPS));               
         }
@@ -421,16 +422,16 @@ void computeRobotState(){
       stateY = posN;        
     } else {
       // float
-      //stateX += dist/100.0 * cos(stateDelta);
-      //stateY += dist/100.0 * sin(stateDelta);        
+      //stateX += distOdometry/100.0 * cos(stateDelta);
+      //stateY += distOdometry/100.0 * sin(stateDelta);        
       stateX = posE;
       stateY = posN;        
     }
   } else {     
     // odometry
-    stateX += dist/100.0 * cos(stateDelta);
-    stateY += dist/100.0 * sin(stateDelta);        
-    if (stateOp == OP_MOW) statMowDistanceTraveled += dist/100.0;
+    stateX += distOdometry/100.0 * cos(stateDelta);
+    stateY += distOdometry/100.0 * sin(stateDelta);        
+    if (stateOp == OP_MOW) statMowDistanceTraveled += distOdometry/100.0;
   }   
   if (imuFound){
     // IMU available
