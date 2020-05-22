@@ -132,8 +132,8 @@ void UBLOX::dispatchMessage() {
               lon = ((double)this->unpack_int32(8)) * 1e-7;    //+ ((double)this->unpack_int8(24)) * 1e-2;
               lat = ((double)this->unpack_int32(12)) * 1e-7;   // + ((double)this->unpack_int8(25)) * 1e-2;
               height = this->unpack_int32(16);              
-              hAccuracy = ((double)((unsigned long)this->unpack_int32(28))) * 0.1 / 100.0;
-              vAccuracy = ((double)((unsigned long)this->unpack_int32(32))) * 0.1 / 100.0;
+              hAccuracy = ((double)((unsigned long)this->unpack_int32(28))) * 0.1 / 1000.0;
+              vAccuracy = ((double)((unsigned long)this->unpack_int32(32))) * 0.1 / 1000.0;
               accuracy = sqrt(sq(hAccuracy) + sq(vAccuracy));
               // long hMSL = this->unpack_int32(16);
               //unsigned long hAcc = (unsigned long)this->unpack_int32(20);
