@@ -49,6 +49,9 @@ class UBLOX{
     float relPosD;     // m
     float heading;     // rad
     float groundSpeed; // m/s
+    float accuracy;    // m
+    float hAccuracy;   // m
+    float vAccuracy;   // m
     SolType solution;    
     bool solutionAvail;
     unsigned long dgpsAge;

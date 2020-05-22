@@ -282,6 +282,8 @@ void cmdSummary(){
   s += maps.targetPoint.x;
   s += ",";
   s += maps.targetPoint.y;  
+  s += ",";
+  s += gps.accuracy;  
   cmdAnswer(s);  
 }
 

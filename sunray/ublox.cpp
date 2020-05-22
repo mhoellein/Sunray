@@ -132,11 +132,70 @@ void UBLOX::dispatchMessage() {
               lon = ((double)this->unpack_int32(8)) * 1e-7;    //+ ((double)this->unpack_int8(24)) * 1e-2;
               lat = ((double)this->unpack_int32(12)) * 1e-7;   // + ((double)this->unpack_int8(25)) * 1e-2;
               height = this->unpack_int32(16);              
+              hAccuracy = ((double)((unsigned long)this->unpack_int32(28))) * 0.1 / 100.0;
+              vAccuracy = ((double)((unsigned long)this->unpack_int32(32))) * 0.1 / 100.0;
+              accuracy = sqrt(sq(hAccuracy) + sq(vAccuracy));
               // long hMSL = this->unpack_int32(16);
               //unsigned long hAcc = (unsigned long)this->unpack_int32(20);
               //unsigned long vAcc = (unsigned long)this->unpack_int32(24);                            
             }
             break;            
+          case 0x43:
+            { // UBX-NAV-SIG
+              iTOW = (unsigned long)this->unpack_int32(0);
+              int numSigs = this->unpack_int8(5);
+              float ravg = 0;
+              float rmax = 0;
+              float rmin = 9999;
+              float rsum = 0;    
+              int crcnt = 0;
+              for (int i=0; i < numSigs; i++){                
+                float prRes = ((float)((short)this->unpack_int16(12+16*i))) * 0.1;
+                float cno = ((float)this->unpack_int8(14+16*i));
+                int qualityInd = this->unpack_int8(15+16*i);                                
+                int sigFlags = (unsigned short)this->unpack_int16(18+16*i);                                
+                if ((sigFlags & 3) == 1){
+                  if ((sigFlags & 128) != 0){
+                    /*CONSOLE.print(sigFlags);
+                    CONSOLE.print(",");                                
+                    CONSOLE.print(qualityInd);
+                    CONSOLE.print(",");                                
+                    CONSOLE.print(prRes);
+                    CONSOLE.print(",");
+                    CONSOLE.println(cno); */
+                    rsum += fabs(prRes);
+                    rmax = max(rmax, fabs(prRes));
+                    rmin = min(rmin, fabs(prRes));
+                    crcnt++;
+                  }                    
+                }                
+              }
+              ravg = rsum/((float)numSigs);
+              CONSOLE.print("sol=");
+              CONSOLE.print(solution);              
+              CONSOLE.print("\t");
+              CONSOLE.print("hAcc=");
+              CONSOLE.print(hAccuracy);
+              CONSOLE.print("\tvAcc=");
+              CONSOLE.print(vAccuracy);
+              CONSOLE.print("\t#");
+              CONSOLE.print(crcnt);
+              CONSOLE.print("/");
+              CONSOLE.print(numSigs);
+              CONSOLE.print("\t");
+              CONSOLE.print("rsum=");
+              CONSOLE.print(rsum);
+              CONSOLE.print("\t");
+              CONSOLE.print("ravg=");
+              CONSOLE.print(ravg);
+              CONSOLE.print("\t");
+              CONSOLE.print("rmin=");
+              CONSOLE.print(rmin);
+              CONSOLE.print("\t");
+              CONSOLE.print("rmax=");
+              CONSOLE.println(rmax);
+            }
+            break;
           case 0x3C: 
             { // UBX-NAV-RELPOSNED              
               iTOW = (unsigned long)this->unpack_int32(4);
