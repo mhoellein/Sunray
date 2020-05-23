@@ -154,6 +154,7 @@ void Map::startDocking(){
   if (dockPointsCount > 0){
     // TODO: find valid path to docking point  
     freePointsCount = 1;
+    freePointsIdx = 0;
     points[freeStartIdx] = points[dockStartIdx];
   }    
 }
@@ -164,6 +165,7 @@ void Map::startMowing(){
   if (mowPointsCount > 0){
     // TODO: find valid path to mowing point
     freePointsCount = 1;
+    freePointsIdx = 0;
     points[freeStartIdx] = points[mowStartIdx + mowPointsIdx];
   }  
 }
@@ -195,6 +197,7 @@ bool Map::nextMowPoint(bool sim){
     } else {
       // finished mowing;
       mowPointsIdx = 0;      
+      targetPointIdx = mowStartIdx;                
       return false;
     }         
   } else if ((shouldDock) && (dockPointsCount > 0)) {      

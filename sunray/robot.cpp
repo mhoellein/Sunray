@@ -542,7 +542,8 @@ void controlRobotVelocity(){
             setOperation(OP_IDLE); 
           } else {
             CONSOLE.println("mowing finished!");
-            if (!finishAndRestart){
+            if (!finishAndRestart){             
+              setOperation(OP_IDLE); 
               setOperation(OP_DOCK);             
             }                   
           }
