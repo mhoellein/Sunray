@@ -453,9 +453,10 @@ void controlRobotVelocity(){
     controlLoops++;    
     if (battery.chargerConnected()){
       setOperation(OP_CHARGE);
+      maps.setIsDocked();
       battery.resetIdle();
     }       
-    if (stateOp == OP_MOW){      
+    if ((stateOp == OP_MOW) ||  (stateOp == OP_DOCK)) {      
       pt_t target = maps.targetPoint;
       pt_t lastTarget = maps.lastTargetPoint;
       float linear = 1.0;
@@ -534,12 +535,17 @@ void controlRobotVelocity(){
       }
       if (maps.distanceToTargetPoint(stateX, stateY) < 0.1){
         // next waypoint
-        if (!maps.nextPoint()){
+        if (!maps.nextPoint(false)){
           // finish        
-          CONSOLE.println("mowing finished!");
-          if (!finishAndRestart){
+          if (stateOp == OP_DOCK){
+            CONSOLE.println("docking finished!");
             setOperation(OP_IDLE); 
-          }                    
+          } else {
+            CONSOLE.println("mowing finished!");
+            if (!finishAndRestart){
+              setOperation(OP_DOCK);             
+            }                   
+          }
         }
       }
       battery.resetIdle();
@@ -548,7 +554,8 @@ void controlRobotVelocity(){
         setOperation(OP_IDLE);
         //buzzer.sound(SND_OVERCURRENT, true);        
       }      
-    }  else if (stateOp == OP_CHARGE){      
+    }      
+    else if (stateOp == OP_CHARGE){      
       if (!battery.chargerConnected()){
         setOperation(OP_IDLE);        
       }       
@@ -597,12 +604,27 @@ void setOperation(OperationType op){
       motor.setLinearAngularSpeed(0,0);
       motor.setMowState(false);
       break;
+    case OP_DOCK:
+      motor.setLinearAngularSpeed(0,0);
+      motor.setMowState(false);                
+      maps.startDocking();
+      if (maps.nextPoint(true)) {
+        resetMotionMeasurement();                
+        maps.setLastTargetPoint(stateX, stateY);        
+        stateSensor = SENS_NONE;        
+      } else {
+        CONSOLE.println("error: no waypoints!");
+        op = stateOp;                
+      }
+      break;
     case OP_MOW:      
-      if (maps.nextPointAvailable()) {
+      motor.setLinearAngularSpeed(0,0);
+      maps.startMowing();
+      if (maps.nextPoint(true)) {
         resetMotionMeasurement();                
         maps.setLastTargetPoint(stateX, stateY);        
         stateSensor = SENS_NONE;
-        motor.setMowState(true);        
+        motor.setMowState(true);                
       } else {
         CONSOLE.println("error: no waypoints!");
         op = stateOp;                

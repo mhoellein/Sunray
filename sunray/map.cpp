@@ -16,13 +16,16 @@
 
 void Map::begin(){
   wayMode = WAY_MOW;
-  mowingPointIdx = 0;
+  mowPointsIdx = 0;
+  freePointsIdx = 0;
+  dockPointsIdx = 0;
   mowPointsCount = 0;
   perimeterPointsCount = 0;
   exclusionPointsCount = 0;
   dockPointsCount = 0;
   freePointsCount = 0;
   storeIdx = 0;
+  targetPointIdx = 0;
   for (int i=0; i < MAX_POINTS; i++){
     points[i].x=0;
     points[i].y=0;
@@ -47,10 +50,13 @@ void Map::dump(){
   CONSOLE.println(freePointsCount);
 }
 
+// set point
 bool Map::setPoint(int idx, float x, float y){  
   if (idx >= MAX_POINTS) return false;  
-  if ((idx != 0) && (idx != (storeIdx+1))) return false;
-  mowingPointIdx = 0;  
+  if ((idx != 0) && (idx != (storeIdx+1))) return false;  
+  mowPointsIdx = 0;  
+  dockPointsIdx = 0;
+  freePointsIdx = 0;
   points[idx].x = x;
   points[idx].y = y;
   storeIdx = idx;
@@ -58,6 +64,7 @@ bool Map::setPoint(int idx, float x, float y){
 }
 
 
+// set number points for point type
 bool Map::setWayCount(WayType type, int count){
   switch (type){
     case WAY_PERIMETER:      
@@ -80,9 +87,11 @@ bool Map::setWayCount(WayType type, int count){
   dockStartIdx = perimeterPointsCount + exclusionPointsCount;
   mowStartIdx = dockStartIdx + dockPointsCount;
   freeStartIdx = mowStartIdx + mowPointsCount;
+  targetPointIdx = mowStartIdx;
 }
 
 
+// set number exclusion points for exclusion
 bool Map::setExclusionLength(int idx, int len){
   if (idx >= MAX_EXCLUSIONS) return false;
   int prevStartIdx = perimeterPointsCount;
@@ -98,17 +107,19 @@ bool Map::setExclusionLength(int idx, int len){
 }
 
 
+// set desired progress in mowing points list
 // 1.0 = 100%
 void Map::setMowingPointPercent(float perc){
-  mowingPointIdx = (int)( ((float)mowPointsCount) * perc);
-  if (mowingPointIdx >= mowPointsCount) {
-    mowingPointIdx = mowPointsCount-1;
+  mowPointsIdx = (int)( ((float)mowPointsCount) * perc);
+  if (mowPointsIdx >= mowPointsCount) {
+    mowPointsIdx = mowPointsCount-1;
   }
+  targetPointIdx = mowStartIdx + mowPointsIdx;
 }
 
 void Map::run(){
-  targetPoint = points[mowStartIdx + mowingPointIdx];  
-  percentCompleted = (((float)mowingPointIdx) / ((float)mowPointsCount) * 100.0);
+  targetPoint = points[targetPointIdx];  
+  percentCompleted = (((float)mowPointsIdx) / ((float)mowPointsCount) * 100.0);
 }
 
 float Map::distanceToTargetPoint(float stateX, float stateY){  
@@ -118,9 +129,11 @@ float Map::distanceToTargetPoint(float stateX, float stateY){
   return targetDist;
 }
 
+// check if path from last target to target to next target is a curve
 bool Map::nextPointIsStraight(){
-  if (mowingPointIdx+1 >= mowPointsCount) return false;     
-  pt_t nextPt = points[mowStartIdx + mowingPointIdx+1];  
+  if (wayMode != WAY_MOW) return false;
+  if (mowPointsIdx+1 >= mowPointsCount) return false;     
+  pt_t nextPt = points[mowStartIdx + mowPointsIdx+1];  
   float angleCurr = pointsAngle(lastTargetPoint.x, lastTargetPoint.y, targetPoint.x, targetPoint.y);
   float angleNext = pointsAngle(targetPoint.x, targetPoint.y, nextPt.x, nextPt.y);
   angleNext = scalePIangles(angleNext, angleCurr);                    
@@ -129,21 +142,122 @@ bool Map::nextPointIsStraight(){
   return ((fabs(diffDelta)/PI*180.0) <= 20);
 }
 
-bool Map::nextPointAvailable(){
-  return (mowingPointIdx < mowPointsCount);
+// mower has been docked
+void Map::setIsDocked(){
+  wayMode = WAY_DOCK;
+  dockPointsIdx = max(0, dockPointsCount-1);
 }
 
-bool Map::nextPoint(){
-  if (mowingPointIdx+1 < mowPointsCount){
-    // next waypoint
-    lastTargetPoint = targetPoint;
-    mowingPointIdx++;
-    return true;
+void Map::startDocking(){
+  shouldDock = true;
+  shouldMow = false;
+  if (dockPointsCount > 0){
+    // TODO: find valid path to docking point  
+    freePointsCount = 1;
+    points[freeStartIdx] = points[dockStartIdx];
+  }    
+}
+
+void Map::startMowing(){
+  shouldDock = false;
+  shouldMow = true;    
+  if (mowPointsCount > 0){
+    // TODO: find valid path to mowing point
+    freePointsCount = 1;
+    points[freeStartIdx] = points[mowStartIdx + mowPointsIdx];
+  }  
+}
+
+// go to next point
+// sim=true: only simulate (do not change data)
+bool Map::nextPoint(bool sim){
+  if (wayMode == WAY_DOCK){
+    return (nextDockPoint(sim));
+  } 
+  else if (wayMode == WAY_MOW) {
+    return (nextMowPoint(sim));
+  } 
+  else if (wayMode == WAY_FREE) {
+    return (nextFreePoint(sim));
+  } else return false;
+}
+
+
+// get next mowing point
+bool Map::nextMowPoint(bool sim){  
+  if (shouldMow){
+    if (mowPointsIdx+1 < mowPointsCount){
+      // next mowing point
+      if (!sim) lastTargetPoint = targetPoint;
+      if (!sim) mowPointsIdx++;
+      if (!sim) targetPointIdx++;
+      return true;
+    } else {
+      // finished mowing;
+      mowPointsIdx = 0;      
+      return false;
+    }         
+  } else if ((shouldDock) && (dockPointsCount > 0)) {      
+      if (!sim) lastTargetPoint = targetPoint;
+      if (!sim) targetPointIdx = freeStartIdx; 
+      if (!sim) wayMode = WAY_FREE;      
+      return true;    
+  } else return false;  
+}
+
+// get next docking point  
+bool Map::nextDockPoint(bool sim){
+  if (shouldDock){
+    // should dock  
+    if (dockPointsIdx+1 < dockPointsCount){
+      if (!sim) lastTargetPoint = targetPoint;
+      if (!sim) dockPointsIdx++;              
+      if (!sim) targetPointIdx++;      
+      return true;
+    } else {
+      // finished docking
+      return false;
+    } 
+  } else if (shouldMow){
+    // should undock
+    if (dockPointsIdx > 0){
+      if (!sim) lastTargetPoint = targetPoint;
+      if (!sim) dockPointsIdx--;              
+      if (!sim) targetPointIdx--;      
+    } else {
+      // finished undocking
+      if ((shouldMow) && (mowPointsCount > 0 )){
+        if (!sim) lastTargetPoint = targetPoint;
+        if (!sim) targetPointIdx = freeStartIdx;
+        if (!sim) wayMode = WAY_FREE;      
+        return true;
+      } else return false;        
+    }  
+  }
+}
+
+// get next free point  
+bool Map::nextFreePoint(bool sim){
+  // free points
+  if (freePointsIdx+1 < freePointsCount){
+    if (!sim) lastTargetPoint = targetPoint;
+    if (!sim) freePointsIdx++;              
+    if (!sim) targetPointIdx++;      
   } else {
-    // finish        
-    mowingPointIdx=0;    
-    return false;
-  }       
+    // finished free points
+    if ((shouldMow) && (mowPointsCount > 0 )){
+      if (!sim) lastTargetPoint = targetPoint;
+      if (!sim) targetPointIdx = mowStartIdx + mowPointsIdx;              
+      if (!sim) wayMode = WAY_MOW;
+      return true;
+    } else if ((shouldDock) && (dockPointsCount > 0)){      
+      if (!sim) lastTargetPoint = targetPoint;
+      if (!sim) dockPointsIdx = 0;
+      if (!sim) targetPointIdx = dockStartIdx;                
+      if (!sim) wayMode = WAY_DOCK;
+      return true;
+    } else return false;
+  }  
 }
 
 void Map::setLastTargetPoint(float stateX, float stateY){

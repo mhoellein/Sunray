@@ -273,7 +273,7 @@ void cmdSummary(){
   s += ",";
   s += stateOp;
   s += ",";
-  s += maps.mowingPointIdx;
+  s += maps.mowPointsIdx;
   s += ",";
   s += (millis() - gps.dgpsAge)/1000.0;
   s += ",";

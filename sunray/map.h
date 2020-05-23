@@ -28,23 +28,43 @@ struct pt_t {
 typedef struct pt_t pt_t;
 
 
+// there are three types of points used as waypoints:
+// mowing points:     fixed and transfered by the phone
+// docking points:    fixed and transfered by the phone
+// free points:       dynamic, connects the above, computed by the Arduino based on the situation 
+//                    (obstacles, docking, etc.)
+//
+// there are additional static points (not used as waypoints but for computing the free points):
+// exclusion points:  fixed and transfered by the phone
+// perimeter points:  fixed and transfered by the phone
+
+// explain image:  https://wiki.ardumower.de/index.php?title=Ardumower_Sunray#What_data_is_transferred_to_the_Arduino
+
+
 class Map
 {
   public:    
-    // current way mode
+    // current waypoint mode (dock, mow, free)
     WayType wayMode;
-    // the line defined by (lastTargetPoint, targetPoint) is the current line to mow
+    
+    // the line defined by (lastTargetPoint, targetPoint) is the current line to drive
     pt_t targetPoint; // target point
     pt_t lastTargetPoint; // last target point
-    int mowingPointIdx; // next mowing point in waypoint list
+    int targetPointIdx; // index of target point    
+    
+    // keeps track of the progress in the different point types
+    int mowPointsIdx;    // next mowing point in mowing point list    
+    int dockPointsIdx;   // next dock point in docking point list
+    int freePointsIdx;   // next free point in free point list
     int percentCompleted; 
     
+    // all points are stored in one array and we need to know the counts and start indexes
     int perimeterPointsCount;    
     int exclusionPointsCount;        
     int dockPointsCount;
     int mowPointsCount;    
     int freePointsCount;
-        
+                  
     short perimeterStartIdx; // perimeter start index into points    
     short exclusionCount;    // number exclusions      
     short exclusionLength[MAX_EXCLUSIONS]; // number points in exclusion
@@ -52,31 +72,40 @@ class Map
     short dockStartIdx;  // docking start index into points
     short mowStartIdx; // mowing start index into points    
     short freeStartIdx;  // free points start index into points
+    
+    // storing all points
     pt_t points[MAX_POINTS]; // points list in this order: ( perimeter, exclusions, docking, mowing, free )
-    short storeIdx; 
+    short storeIdx;  // index where to store next transferred point
+    
+    bool shouldDock;  // start docking?
+    bool shouldMow;  // start mowing?
     
     void begin();    
     void run();    
-    // set waypoint coordinate
+    // set point coordinate
     bool setPoint(int idx, float x, float y);    
     // set number points for waytype
     bool setWayCount(WayType type, int count);
     // set number points for exclusion 
     bool setExclusionLength(int idx, int len);
-    // choose mowing index point (0..100%) from waypoint list
+    // choose progress (0..100%) in mowing point list
     void setMowingPointPercent(float perc);
     // set last target point
     void setLastTargetPoint(float stateX, float stateY);
     // distance to target waypoint
     float distanceToTargetPoint(float stateX, float stateY);    
     // go to next waypoint
-    bool nextPoint();
-    // next waypoint available?
-    bool nextPointAvailable();
+    bool nextPoint(bool sim);
     // next point is straight and not a sharp curve?
     bool nextPointIsStraight();
+    void setIsDocked();
+    void startDocking();
+    void startMowing();
     void dump();
   private:
+    bool nextMowPoint(bool sim);
+    bool nextDockPoint(bool sim);
+    bool nextFreePoint(bool sim);
     
 };
 
