@@ -406,6 +406,7 @@ void computeRobotState(){
     } else if (distGPS > 0.1){      
       if (fabs(motor.linearSpeedSet) > 0){       
         stateDeltaGPS = scalePI(atan2(posN-lastPosN, posE-lastPosE));    
+        if (motor.linearSpeedSet < 0) stateDeltaGPS = scalePI(stateDeltaGPS + PI);
         //stateDeltaGPS = scalePI(2*PI-gps.heading+PI/2);
         float diffDelta = distancePI(stateDelta, stateDeltaGPS);                 
         if (fabs(diffDelta/PI*180) > 45){ // IMU-based heading too far away => use GPS heading
@@ -450,7 +451,7 @@ void computeRobotState(){
 }
 
 
-// control robot velocity (linear,angular)
+// control robot velocity (linear,angular) to track line to next waypoint (target)
 void controlRobotVelocity(){  
   if (millis() >= nextControlTime){        
     nextControlTime = millis() + 20; 
@@ -466,6 +467,7 @@ void controlRobotVelocity(){
       float linear = 1.0;
       float angular = 0;      
       float targetDelta = pointsAngle(stateX, stateY, target.x, target.y);      
+      if (maps.trackReverse) targetDelta = scalePI(targetDelta + PI);
       targetDelta = scalePIangles(targetDelta, stateDelta);
       float diffDelta = distancePI(stateDelta, targetDelta);                         
       float lateralError = distanceLine(stateX, stateY, lastTarget.x, lastTarget.y, target.x, target.y);      
@@ -487,30 +489,38 @@ void controlRobotVelocity(){
       } 
       else {
         // line control (if angle ok, follow path to next waypoint)                         
-        bool straight = maps.nextPointIsStraight();
-        if (     ((setSpeed > 0.2) && (maps.distanceToTargetPoint(stateX, stateY) < 0.3) && (!straight))
-              || ((linearMotionStartTime != 0) && (millis() < linearMotionStartTime + 3000))              
-           ) 
-        {
-          linear = 0.1; // reduce speed when approaching/leaving waypoints          
+        if (maps.trackSlow) {
+          // planner forces slow tracking (e.g. docking etc)
+          linear = 0.03; 
+          angular = 0.5 * diffDelta + 0.5 * lateralError;       // correct for path errors 
         } 
-        else {
-          if (gps.solution == UBLOX::SOL_FLOAT)        
-            linear = min(setSpeed, 0.1); // reduce speed for float solution
-          else
-            linear = setSpeed;         // desired speed
+        else {                
+          bool straight = maps.nextPointIsStraight();
+          if (     ((setSpeed > 0.2) && (maps.distanceToTargetPoint(stateX, stateY) < 0.3) && (!straight))
+                || ((linearMotionStartTime != 0) && (millis() < linearMotionStartTime + 3000))              
+             ) 
+          {
+            linear = 0.1; // reduce speed when approaching/leaving waypoints          
+          } 
+          else {
+            if (gps.solution == UBLOX::SOL_FLOAT)        
+              linear = min(setSpeed, 0.1); // reduce speed for float solution
+            else
+              linear = setSpeed;         // desired speed
+          }
+          angular = 3.0 * diffDelta + 3.0 * lateralError;       // correct for path errors           
+          /*pidLine.w = 0;              
+          pidLine.x = lateralError;
+          pidLine.max_output = PI;
+          pidLine.y_min = -PI;
+          pidLine.y_max = PI;
+          pidLine.compute();
+          angular = -pidLine.y;   */
+          //CONSOLE.print(lateralError);        
+          //CONSOLE.print(",");        
+          //CONSOLE.println(angular/PI*180.0);        
         }
-        angular = 3.0 * diffDelta + 3.0 * lateralError;       // correct for path errors
-        /*pidLine.w = 0;              
-        pidLine.x = lateralError;
-        pidLine.max_output = PI;
-        pidLine.y_min = -PI;
-        pidLine.y_max = PI;
-        pidLine.compute();
-        angular = -pidLine.y;   */
-        //CONSOLE.print(lateralError);        
-        //CONSOLE.print(",");        
-        //CONSOLE.println(angular/PI*180.0);        
+        if (maps.trackReverse) linear *= -1;
       }
       if (fixTimeout != 0){
         if (millis() > lastFixTime + fixTimeout * 1000.0){

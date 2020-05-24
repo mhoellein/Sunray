@@ -240,6 +240,7 @@ bool Map::nextDockPoint(bool sim){
         if (!sim) lastTargetPoint = targetPoint;
         if (!sim) targetPointIdx = freeStartIdx;
         if (!sim) wayMode = WAY_FREE;      
+        if (!sim) trackReverse = false;              
         if (!sim) trackSlow = false;
         return true;
       } else return false;        
@@ -267,7 +268,7 @@ bool Map::nextFreePoint(bool sim){
       if (!sim) lastTargetPoint = targetPoint;
       if (!sim) dockPointsIdx = 0;
       if (!sim) targetPointIdx = dockStartIdx;                
-      if (!sim) wayMode = WAY_DOCK;
+      if (!sim) wayMode = WAY_DOCK;      
       return true;
     } else return false;
   }  
