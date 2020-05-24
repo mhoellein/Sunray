@@ -491,7 +491,7 @@ void controlRobotVelocity(){
         // line control (if angle ok, follow path to next waypoint)                         
         if (maps.trackSlow) {
           // planner forces slow tracking (e.g. docking etc)
-          linear = 0.03; 
+          linear = 0.05; 
           angular = 0.5 * diffDelta + 0.5 * lateralError;       // correct for path errors 
         } 
         else {                
@@ -558,7 +558,7 @@ void controlRobotVelocity(){
             CONSOLE.println("mowing finished!");
             if (!finishAndRestart){             
               setOperation(OP_IDLE); 
-              setOperation(OP_DOCK);             
+              //setOperation(OP_DOCK);             
             }                   
           }
         }

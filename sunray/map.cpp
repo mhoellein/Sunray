@@ -146,8 +146,7 @@ bool Map::nextPointIsStraight(){
 
 // mower has been docked
 void Map::setIsDocked(){
-  wayMode = WAY_DOCK;
-  dockPointsIdx = max(0, dockPointsCount-1);
+  //dockPointsIdx = max(0, dockPointsCount-1);
 }
 
 void Map::startDocking(){
@@ -262,7 +261,7 @@ bool Map::nextFreePoint(bool sim){
       if (!sim) lastTargetPoint = targetPoint;
       if (!sim) targetPointIdx = mowStartIdx + mowPointsIdx;              
       if (!sim) wayMode = WAY_MOW;
-      return true;
+      return false;       // TODO: return true
     } else if ((shouldDock) && (dockPointsCount > 0)){      
       // start docking
       if (!sim) lastTargetPoint = targetPoint;
