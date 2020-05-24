@@ -16,6 +16,8 @@
 
 void Map::begin(){
   wayMode = WAY_MOW;
+  trackReverse = false;
+  trackSlow = false;
   mowPointsIdx = 0;
   freePointsIdx = 0;
   dockPointsIdx = 0;
@@ -201,6 +203,7 @@ bool Map::nextMowPoint(bool sim){
       return false;
     }         
   } else if ((shouldDock) && (dockPointsCount > 0)) {      
+      // go docking
       if (!sim) lastTargetPoint = targetPoint;
       if (!sim) targetPointIdx = freeStartIdx; 
       if (!sim) wayMode = WAY_FREE;      
@@ -215,6 +218,8 @@ bool Map::nextDockPoint(bool sim){
     if (dockPointsIdx+1 < dockPointsCount){
       if (!sim) lastTargetPoint = targetPoint;
       if (!sim) dockPointsIdx++;              
+      if (!sim) trackReverse = false;              
+      if (!sim) trackSlow = true;
       if (!sim) targetPointIdx++;      
       return true;
     } else {
@@ -226,6 +231,8 @@ bool Map::nextDockPoint(bool sim){
     if (dockPointsIdx > 0){
       if (!sim) lastTargetPoint = targetPoint;
       if (!sim) dockPointsIdx--;              
+      if (!sim) trackReverse = true;              
+      if (!sim) trackSlow = true;
       if (!sim) targetPointIdx--;      
     } else {
       // finished undocking
@@ -233,6 +240,7 @@ bool Map::nextDockPoint(bool sim){
         if (!sim) lastTargetPoint = targetPoint;
         if (!sim) targetPointIdx = freeStartIdx;
         if (!sim) wayMode = WAY_FREE;      
+        if (!sim) trackSlow = false;
         return true;
       } else return false;        
     }  
@@ -249,11 +257,13 @@ bool Map::nextFreePoint(bool sim){
   } else {
     // finished free points
     if ((shouldMow) && (mowPointsCount > 0 )){
+      // start mowing
       if (!sim) lastTargetPoint = targetPoint;
       if (!sim) targetPointIdx = mowStartIdx + mowPointsIdx;              
       if (!sim) wayMode = WAY_MOW;
       return true;
     } else if ((shouldDock) && (dockPointsCount > 0)){      
+      // start docking
       if (!sim) lastTargetPoint = targetPoint;
       if (!sim) dockPointsIdx = 0;
       if (!sim) targetPointIdx = dockStartIdx;                

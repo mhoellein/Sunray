@@ -51,6 +51,8 @@ class Map
     pt_t targetPoint; // target point
     pt_t lastTargetPoint; // last target point
     int targetPointIdx; // index of target point    
+    bool trackReverse; // get to target in reverse?
+    bool trackSlow;    // get to target slowly?
     
     // keeps track of the progress in the different point types
     int mowPointsIdx;    // next mowing point in mowing point list    
