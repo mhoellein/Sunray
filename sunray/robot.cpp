@@ -219,8 +219,8 @@ void startIMU(bool forceIMU){
 
 
 // read IMU sensor (and restart if required)
-// I2C NOTE: It can be minutes or hours, then there's an I2C error (probably due an spike on the SCL/SDA lines) 
-// and the I2C bus on the pcb1.3 (and the arduino library) hangs and communication is delayed. 
+// I2C recovery: It can be minutes or hours, then there's an I2C error (probably due an spike on the 
+// SCL/SDA lines) and the I2C bus on the pcb1.3 (and the arduino library) hangs and communication is delayed. 
 // We check if the communication is significantly (10ms instead of 1ms) delayed, if so we restart the I2C 
 // bus (by clocking out any garbage on the I2C bus) and then restarting the IMU module.
 void readIMU(){
