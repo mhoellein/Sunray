@@ -56,6 +56,7 @@ bool finishAndRestart = false;
 bool resetLastPos = true;
 bool rotateLeft = false;
 bool rotateRight = false;
+bool stateChargerConnected = false;
 
 UBLOX::SolType lastSolution = UBLOX::SOL_INVALID;    
 unsigned long nextStatTime = 0;
@@ -453,129 +454,107 @@ void computeRobotState(){
 
 // control robot velocity (linear,angular) to track line to next waypoint (target)
 void controlRobotVelocity(){  
-  if (millis() >= nextControlTime){        
-    nextControlTime = millis() + 20; 
-    controlLoops++;    
-    if (battery.chargerConnected()){
-      setOperation(OP_CHARGE);
-      maps.setIsDocked();
-      battery.resetIdle();
-    }       
-    if ((stateOp == OP_MOW) ||  (stateOp == OP_DOCK)) {      
-      pt_t target = maps.targetPoint;
-      pt_t lastTarget = maps.lastTargetPoint;
-      float linear = 1.0;
-      float angular = 0;      
-      float targetDelta = pointsAngle(stateX, stateY, target.x, target.y);      
-      if (maps.trackReverse) targetDelta = scalePI(targetDelta + PI);
-      targetDelta = scalePIangles(targetDelta, stateDelta);
-      float diffDelta = distancePI(stateDelta, targetDelta);                         
-      float lateralError = distanceLine(stateX, stateY, lastTarget.x, lastTarget.y, target.x, target.y);      
-              
-      if (fabs(diffDelta)/PI*180.0 > 20){
-        // angular control (if angle to far away, rotate to next waypoint)
-        linear = 0;
-        angular = 0.5;               
-        if ((!rotateLeft) && (!rotateRight)){ // decide for one rotation direction (and keep it)
-          if (diffDelta < 0) rotateLeft = true;
-            else rotateRight = true;
-        }        
-        if (rotateLeft) angular *= -1;            
-        resetMotionMeasurement();
-        if (fabs(diffDelta)/PI*180.0 < 90){
-          rotateLeft = false;  // reset rotate direction
-          rotateRight = false;
-        }
+  pt_t target = maps.targetPoint;
+  pt_t lastTarget = maps.lastTargetPoint;
+  float linear = 1.0;
+  float angular = 0;      
+  float targetDelta = pointsAngle(stateX, stateY, target.x, target.y);      
+  if (maps.trackReverse) targetDelta = scalePI(targetDelta + PI);
+  targetDelta = scalePIangles(targetDelta, stateDelta);
+  float diffDelta = distancePI(stateDelta, targetDelta);                         
+  float lateralError = distanceLine(stateX, stateY, lastTarget.x, lastTarget.y, target.x, target.y);      
+          
+  if (fabs(diffDelta)/PI*180.0 > 20){
+    // angular control (if angle to far away, rotate to next waypoint)
+    linear = 0;
+    angular = 0.5;               
+    if ((!rotateLeft) && (!rotateRight)){ // decide for one rotation direction (and keep it)
+      if (diffDelta < 0) rotateLeft = true;
+        else rotateRight = true;
+    }        
+    if (rotateLeft) angular *= -1;            
+    resetMotionMeasurement();
+    if (fabs(diffDelta)/PI*180.0 < 90){
+      rotateLeft = false;  // reset rotate direction
+      rotateRight = false;
+    }
+  } 
+  else {
+    // line control (if angle ok, follow path to next waypoint)                         
+    if (maps.trackSlow) {
+      // planner forces slow tracking (e.g. docking etc)
+      linear = 0.05; 
+      angular = 0.5 * diffDelta + 0.5 * lateralError;       // correct for path errors 
+    } 
+    else {                
+      bool straight = maps.nextPointIsStraight();
+      if (     ((setSpeed > 0.2) && (maps.distanceToTargetPoint(stateX, stateY) < 0.3) && (!straight))
+            || ((linearMotionStartTime != 0) && (millis() < linearMotionStartTime + 3000))              
+         ) 
+      {
+        linear = 0.1; // reduce speed when approaching/leaving waypoints          
       } 
       else {
-        // line control (if angle ok, follow path to next waypoint)                         
-        if (maps.trackSlow) {
-          // planner forces slow tracking (e.g. docking etc)
-          linear = 0.05; 
-          angular = 0.5 * diffDelta + 0.5 * lateralError;       // correct for path errors 
-        } 
-        else {                
-          bool straight = maps.nextPointIsStraight();
-          if (     ((setSpeed > 0.2) && (maps.distanceToTargetPoint(stateX, stateY) < 0.3) && (!straight))
-                || ((linearMotionStartTime != 0) && (millis() < linearMotionStartTime + 3000))              
-             ) 
-          {
-            linear = 0.1; // reduce speed when approaching/leaving waypoints          
-          } 
-          else {
-            if (gps.solution == UBLOX::SOL_FLOAT)        
-              linear = min(setSpeed, 0.1); // reduce speed for float solution
-            else
-              linear = setSpeed;         // desired speed
-          }
-          angular = 3.0 * diffDelta + 3.0 * lateralError;       // correct for path errors           
-          /*pidLine.w = 0;              
-          pidLine.x = lateralError;
-          pidLine.max_output = PI;
-          pidLine.y_min = -PI;
-          pidLine.y_max = PI;
-          pidLine.compute();
-          angular = -pidLine.y;   */
-          //CONSOLE.print(lateralError);        
-          //CONSOLE.print(",");        
-          //CONSOLE.println(angular/PI*180.0);        
-        }
-        if (maps.trackReverse) linear *= -1;
+        if (gps.solution == UBLOX::SOL_FLOAT)        
+          linear = min(setSpeed, 0.1); // reduce speed for float solution
+        else
+          linear = setSpeed;         // desired speed
       }
-      if (fixTimeout != 0){
-        if (millis() > lastFixTime + fixTimeout * 1000.0){
-          // stop on fix solution timeout (fixme: optionally: turn on place if fix-timeout)
-          linear = 0;
-          angular = 0;
-          stateSensor = SENS_GPS_FIX_TIMEOUT;
-          //angular = 0.2;
-        } else {
-          if (stateSensor == SENS_GPS_FIX_TIMEOUT) stateSensor = SENS_NONE; // clear fix timeout
-        }       
-      }                  
-      motor.setLinearAngularSpeed(linear, angular);    
-      if ((gps.solution == UBLOX::SOL_FIXED) || (gps.solution == UBLOX::SOL_FLOAT)){        
-        if (linear > 0.06) {
-          if ((millis() > linearMotionStartTime + 5000) && (stateGroundSpeed < 0.03)){
-            // if in linear motion and not enough ground speed => obstacle
-            CONSOLE.println("obstacle!");
-            stateSensor = SENS_OBSTACLE;
-            setOperation(OP_ERROR);
-            buzzer.sound(SND_STUCK, true);        
-          }
-        } else {
-          resetMotionMeasurement();
-        }  
-      }
-      if (maps.distanceToTargetPoint(stateX, stateY) < 0.1){
-        // next waypoint
-        if (!maps.nextPoint(false)){
-          // finish        
-          if (stateOp == OP_DOCK){
-            CONSOLE.println("docking finished!");
-            setOperation(OP_IDLE); 
-          } else {
-            CONSOLE.println("mowing finished!");
-            if (!finishAndRestart){             
-              setOperation(OP_IDLE); 
-              //setOperation(OP_DOCK);             
-            }                   
-          }
-        }
-      }
-      battery.resetIdle();
-      if (battery.underVoltage()){
-        stateSensor = SENS_BAT_UNDERVOLTAGE;
-        setOperation(OP_IDLE);
-        //buzzer.sound(SND_OVERCURRENT, true);        
-      }      
-    }      
-    else if (stateOp == OP_CHARGE){      
-      if (!battery.chargerConnected()){
-        setOperation(OP_IDLE);        
-      }       
+      angular = 3.0 * diffDelta + 3.0 * lateralError;       // correct for path errors           
+      /*pidLine.w = 0;              
+      pidLine.x = lateralError;
+      pidLine.max_output = PI;
+      pidLine.y_min = -PI;
+      pidLine.y_max = PI;
+      pidLine.compute();
+      angular = -pidLine.y;   */
+      //CONSOLE.print(lateralError);        
+      //CONSOLE.print(",");        
+      //CONSOLE.println(angular/PI*180.0);        
     }
+    if (maps.trackReverse) linear *= -1;
   }
+  if (fixTimeout != 0){
+    if (millis() > lastFixTime + fixTimeout * 1000.0){
+      // stop on fix solution timeout (fixme: optionally: turn on place if fix-timeout)
+      linear = 0;
+      angular = 0;
+      stateSensor = SENS_GPS_FIX_TIMEOUT;
+      //angular = 0.2;
+    } else {
+      if (stateSensor == SENS_GPS_FIX_TIMEOUT) stateSensor = SENS_NONE; // clear fix timeout
+    }       
+  }                  
+  motor.setLinearAngularSpeed(linear, angular);    
+  if ((gps.solution == UBLOX::SOL_FIXED) || (gps.solution == UBLOX::SOL_FLOAT)){        
+    if (linear > 0.06) {
+      if ((millis() > linearMotionStartTime + 5000) && (stateGroundSpeed < 0.03)){
+        // if in linear motion and not enough ground speed => obstacle
+        CONSOLE.println("obstacle!");
+        stateSensor = SENS_OBSTACLE;
+        setOperation(OP_ERROR);
+        buzzer.sound(SND_STUCK, true);        
+      }
+    } else {
+      resetMotionMeasurement();
+    }  
+  }
+  if (maps.distanceToTargetPoint(stateX, stateY) < 0.1){
+    // next waypoint
+    if (!maps.nextPoint(false)){
+      // finish        
+      if (stateOp == OP_DOCK){
+        CONSOLE.println("docking finished!");
+        setOperation(OP_IDLE); 
+      } else {
+        CONSOLE.println("mowing finished!");
+        if (!finishAndRestart){             
+          setOperation(OP_IDLE); 
+          //setOperation(OP_DOCK);             
+        }                   
+      }
+    }
+  }  
 }
 
 
@@ -599,7 +578,38 @@ void run(){
   
   computeRobotState();  
   
-  controlRobotVelocity();      
+  if (millis() >= nextControlTime){        
+    nextControlTime = millis() + 20; 
+    controlLoops++;    
+    
+    if (battery.chargerConnected() != stateChargerConnected) {    
+      stateChargerConnected = battery.chargerConnected(); 
+      if (stateChargerConnected){      
+        stateChargerConnected = true;
+        setOperation(OP_CHARGE);                
+      }           
+    } 
+    if (battery.chargerConnected()){
+      if ((stateOp == OP_IDLE) || (stateOp == OP_CHARGE)){
+        maps.setIsDocked();
+      }
+      battery.resetIdle();        
+    }
+    if ((stateOp == OP_MOW) ||  (stateOp == OP_DOCK)) {      
+      controlRobotVelocity();      
+      battery.resetIdle();
+      if (battery.underVoltage()){
+        stateSensor = SENS_BAT_UNDERVOLTAGE;
+        setOperation(OP_IDLE);
+        //buzzer.sound(SND_OVERCURRENT, true);        
+      } 
+    }
+    else if (stateOp == OP_CHARGE){      
+      if (!battery.chargerConnected()){
+        setOperation(OP_IDLE);        
+      }
+    }
+  }    
     
   // ----- read serial input (BT/console) -------------
   processConsole();     

@@ -146,7 +146,12 @@ bool Map::nextPointIsStraight(){
 
 // mower has been docked
 void Map::setIsDocked(){
-  //dockPointsIdx = max(0, dockPointsCount-1);
+  if (dockPointsCount < 2) return;
+  wayMode = WAY_DOCK;
+  dockPointsIdx = dockPointsCount-2;
+  targetPointIdx = dockStartIdx + dockPointsIdx;                     
+  trackReverse = true;             
+  trackSlow = true;
 }
 
 void Map::startDocking(){
