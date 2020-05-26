@@ -26,6 +26,8 @@ void UBLOX::begin()
   this->count    = 0;
   this->dgpsAge  = 0;
   this->solutionAvail = false;
+  this->numSV    = 0;
+  this->accuracy  =0;  
 	// begin the serial port for uBlox	
   _bus->begin(_baud);
 }
@@ -117,6 +119,12 @@ void UBLOX::dispatchMessage() {
     switch (this->msgclass){
       case 0x01:
         switch (this->msgid) {
+          case 0x07:
+            { // UBX-NAV-PVT
+              iTOW = (unsigned long)this->unpack_int32(0);
+              numSV = this->unpack_int8(23);               
+            }
+            break;
           case 0x12:
             { // UBX-NAV-VELNED
               iTOW = (unsigned long)this->unpack_int32(0);

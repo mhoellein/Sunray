@@ -41,6 +41,7 @@ class UBLOX{
     } state_t;    
     
     unsigned long iTOW;
+    int numSV;         // #satellites used in navigation solution
     double lon;        // deg
     double lat;        // deg
     double height;     // m

@@ -284,6 +284,8 @@ void cmdSummary(){
   s += maps.targetPoint.y;  
   s += ",";
   s += gps.accuracy;  
+  s += ",";
+  s += gps.numSV;  
   cmdAnswer(s);  
 }
 
