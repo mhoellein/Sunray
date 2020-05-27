@@ -6,10 +6,11 @@
 
   ublox f9p UBX parser
   Note: only activate UBX messages: 
-  1) 'UBX-NAV-RELPOSNED'  (Relative Positioning Information in NED frame)
-  2) 'UBX-NAV-HPPOSLLH'   (absolute position)
-  3) 'UBX-NAV-VELNED'     (velocity)
-  4) 'UBX-RXM-RTCM'       (RTCM messages)
+  1) 'UBX-NAV-PTV'        (Navigation Position Velocity Time Solution)
+  2) 'UBX-NAV-RELPOSNED'  (Relative Positioning Information in NED frame)
+  3) 'UBX-NAV-HPPOSLLH'   (absolute position)
+  4) 'UBX-NAV-VELNED'     (velocity)
+  5) 'UBX-RXM-RTCM'       (RTCM messages)
   https://www.u-blox.com/sites/default/files/u-blox_ZED-F9P_InterfaceDescription_%28UBX-18010854%29.pdf
 
 */
