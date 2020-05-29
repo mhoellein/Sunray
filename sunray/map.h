@@ -53,6 +53,9 @@ class Map
     int targetPointIdx; // index of target point    
     bool trackReverse; // get to target in reverse?
     bool trackSlow;    // get to target slowly?
+    bool useGPSfloatForPosEstimation;    // use GPS float solution for position estimation?
+    bool useGPSForDeltaEstimation;  // use GPS solution for delta estimation?
+    bool useIMU; // allow using IMU?
     
     // keeps track of the progress in the different point types
     int mowPointsIdx;    // next mowing point in mowing point list    
@@ -98,9 +101,11 @@ class Map
     float distanceToTargetPoint(float stateX, float stateY);    
     // go to next waypoint
     bool nextPoint(bool sim);
-    // next point is straight and not a sharp curve?
+    // next point is straight and not a sharp curve?   
     bool nextPointIsStraight();
-    void setIsDocked();
+    // set robot state position to docking position
+    void setRobotStatePosToDockingPos(float &x, float &y, float &delta);
+    void setIsDocked(bool flag);
     void startDocking();
     void startMowing();
     void dump();

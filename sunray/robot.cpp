@@ -404,8 +404,8 @@ void computeRobotState(){
       resetLastPos = false;
       lastPosN = posN;
       lastPosE = posE;
-    } else if (distGPS > 0.1){      
-      if (fabs(motor.linearSpeedSet) > 0){       
+    } else if (distGPS > 0.1){       
+      if (fabs(motor.linearSpeedSet) > 0){ 
         stateDeltaGPS = scalePI(atan2(posN-lastPosN, posE-lastPosE));    
         if (motor.linearSpeedSet < 0) stateDeltaGPS = scalePI(stateDeltaGPS + PI);
         //stateDeltaGPS = scalePI(2*PI-gps.heading+PI/2);
@@ -429,26 +429,26 @@ void computeRobotState(){
       stateY = posN;        
     } else {
       // float
-      //stateX += distOdometry/100.0 * cos(stateDelta);
-      //stateY += distOdometry/100.0 * sin(stateDelta);        
-      stateX = posE;
-      stateY = posN;        
+      if (maps.useGPSfloatForPosEstimation){ // allows planner to use float solution?
+        stateX = posE;
+        stateY = posN;              
+      }
     }
   } 
-  else {     
-    // odometry
-    stateX += distOdometry/100.0 * cos(stateDelta);
-    stateY += distOdometry/100.0 * sin(stateDelta);        
-    if (stateOp == OP_MOW) statMowDistanceTraveled += distOdometry/100.0;
-  }   
-  if (imuFound){
-    // IMU available
-    stateDelta = scalePI(stateDelta + stateDeltaIMU );  
-    stateDeltaIMU = 0;
+  
+  // odometry
+  stateX += distOdometry/100.0 * cos(stateDelta);
+  stateY += distOdometry/100.0 * sin(stateDelta);        
+  if (stateOp == OP_MOW) statMowDistanceTraveled += distOdometry/100.0;
+  
+  if ((imuFound) && (maps.useIMU)) {
+    // IMU available and should be used by planner
+    stateDelta = scalePI(stateDelta + stateDeltaIMU );      
   } else {
     // odometry
     stateDelta = scalePI(stateDelta + deltaOdometry);  
   }
+  stateDeltaIMU = 0;
 }
 
 
@@ -464,7 +464,14 @@ void controlRobotVelocity(){
   float diffDelta = distancePI(stateDelta, targetDelta);                         
   float lateralError = distanceLine(stateX, stateY, lastTarget.x, lastTarget.y, target.x, target.y);      
           
-  if (fabs(diffDelta)/PI*180.0 > 20){
+  bool angleToTargetFits = false;
+  if (maps.trackSlow){
+    angleToTargetFits = (fabs(diffDelta)/PI*180.0 < 10); 
+  } else {
+    angleToTargetFits = (fabs(diffDelta)/PI*180.0 < 20); 
+  }  
+     
+  if (!angleToTargetFits){
     // angular control (if angle to far away, rotate to next waypoint)
     linear = 0;
     angular = 0.5;               
@@ -483,8 +490,8 @@ void controlRobotVelocity(){
     // line control (if angle ok, follow path to next waypoint)                         
     if (maps.trackSlow) {
       // planner forces slow tracking (e.g. docking etc)
-      linear = 0.05; 
-      angular = 0.5 * diffDelta + 0.5 * lateralError;       // correct for path errors 
+      linear = 0.1; 
+      angular = 2.0 * diffDelta + 2.0 * lateralError;       // correct for path errors 
     } 
     else {                
       bool straight = maps.nextPointIsStraight();
@@ -539,7 +546,16 @@ void controlRobotVelocity(){
       resetMotionMeasurement();
     }  
   }
-  if (maps.distanceToTargetPoint(stateX, stateY) < 0.1){
+    
+  bool targetReached = false;
+  if (maps.trackSlow){
+    targetReached = (maps.distanceToTargetPoint(stateX, stateY) < 0.05);
+  } else {
+    targetReached = (maps.distanceToTargetPoint(stateX, stateY) < 0.1);
+  }
+  
+    
+  if (targetReached){
     // next waypoint
     if (!maps.nextPoint(false)){
       // finish        
@@ -588,12 +604,17 @@ void run(){
         stateChargerConnected = true;
         setOperation(OP_CHARGE);                
       }           
-    } 
+    }     
     if (battery.chargerConnected()){
       if ((stateOp == OP_IDLE) || (stateOp == OP_CHARGE)){
-        maps.setIsDocked();
+        maps.setIsDocked(true);               
+        maps.setRobotStatePosToDockingPos(stateX, stateY, stateDelta);                       
       }
       battery.resetIdle();        
+    } else {
+      if ((stateOp == OP_IDLE) || (stateOp == OP_CHARGE)){
+        maps.setIsDocked(false);
+      }
     }
     if ((stateOp == OP_MOW) ||  (stateOp == OP_DOCK)) {      
       controlRobotVelocity();      

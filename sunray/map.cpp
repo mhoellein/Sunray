@@ -18,6 +18,9 @@ void Map::begin(){
   wayMode = WAY_MOW;
   trackReverse = false;
   trackSlow = false;
+  useGPSfloatForPosEstimation = true;
+  useGPSForDeltaEstimation = true;
+  useIMU = true;
   mowPointsIdx = 0;
   freePointsIdx = 0;
   dockPointsIdx = 0;
@@ -144,14 +147,37 @@ bool Map::nextPointIsStraight(){
   return ((fabs(diffDelta)/PI*180.0) <= 20);
 }
 
-// mower has been docked
-void Map::setIsDocked(){
+void Map::setRobotStatePosToDockingPos(float &x, float &y, float &delta){
   if (dockPointsCount < 2) return;
-  wayMode = WAY_DOCK;
-  dockPointsIdx = dockPointsCount-2;
-  targetPointIdx = dockStartIdx + dockPointsIdx;                     
-  trackReverse = true;             
-  trackSlow = true;
+  pt_t dockFinalPt = points[dockStartIdx + dockPointsCount-1];
+  pt_t dockPrevPt = points[dockStartIdx + dockPointsCount-2];
+  x = dockFinalPt.x;
+  y = dockFinalPt.y;
+  delta = pointsAngle(dockPrevPt.x, dockPrevPt.y, dockFinalPt.x, dockFinalPt.y);  
+}             
+
+// mower has been docked
+void Map::setIsDocked(bool flag){
+  if (dockPointsCount < 2) return;
+  if (flag){
+    wayMode = WAY_DOCK;
+    dockPointsIdx = dockPointsCount-2;
+    targetPointIdx = dockStartIdx + dockPointsIdx;                     
+    trackReverse = true;             
+    trackSlow = true;
+    useGPSfloatForPosEstimation = false;  
+    //useGPSForDeltaEstimation = false;
+    useIMU = false;
+  } else {
+    wayMode = WAY_MOW;
+    dockPointsIdx = 0;
+    targetPointIdx = mowStartIdx + mowPointsIdx;                     
+    trackReverse = false;             
+    trackSlow = false;
+    useGPSfloatForPosEstimation = true;    
+    //useGPSForDeltaEstimation = true;
+    useIMU = true;
+  }  
 }
 
 void Map::startDocking(){
@@ -216,7 +242,7 @@ bool Map::nextMowPoint(bool sim){
 }
 
 // get next docking point  
-bool Map::nextDockPoint(bool sim){
+bool Map::nextDockPoint(bool sim){    
   if (shouldDock){
     // should dock  
     if (dockPointsIdx+1 < dockPointsCount){
@@ -224,6 +250,8 @@ bool Map::nextDockPoint(bool sim){
       if (!sim) dockPointsIdx++;              
       if (!sim) trackReverse = false;              
       if (!sim) trackSlow = true;
+      if (!sim) useGPSfloatForPosEstimation = false;    
+      if (!sim) useIMU = false;    
       if (!sim) targetPointIdx++;      
       return true;
     } else {
@@ -246,6 +274,8 @@ bool Map::nextDockPoint(bool sim){
         if (!sim) wayMode = WAY_FREE;      
         if (!sim) trackReverse = false;              
         if (!sim) trackSlow = false;
+        if (!sim) useGPSfloatForPosEstimation = true;    
+        if (!sim) useIMU = true;    
         return true;
       } else return false;        
     }  
