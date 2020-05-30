@@ -167,7 +167,7 @@ void Map::setIsDocked(bool flag){
     trackSlow = true;
     useGPSfloatForPosEstimation = false;  
     //useGPSForDeltaEstimation = false;
-    useIMU = false;
+    useIMU = true; // false
   } else {
     wayMode = WAY_MOW;
     dockPointsIdx = 0;
@@ -251,7 +251,7 @@ bool Map::nextDockPoint(bool sim){
       if (!sim) trackReverse = false;              
       if (!sim) trackSlow = true;
       if (!sim) useGPSfloatForPosEstimation = false;    
-      if (!sim) useIMU = false;    
+      if (!sim) useIMU = true;     // false
       if (!sim) targetPointIdx++;      
       return true;
     } else {
