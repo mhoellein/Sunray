@@ -91,6 +91,10 @@ WiFiEspServer server(80);
 WiFiEspClient client = NULL;
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
 
+float dockSignal = 0;
+bool foundDockSignal = true;
+float dockAngularSpeed = 0.1;
+
 
 // get free memory
 int freeMemory() {
@@ -303,6 +307,7 @@ void start(){
   pinMan.begin();     
   // keep battery switched ON
   pinMode(pinBatterySwitch, OUTPUT);    
+  pinMode(pinDockingReflector, INPUT);
   digitalWrite(pinBatterySwitch, HIGH);  
   buzzer.begin();      
   CONSOLE.begin(CONSOLE_BAUDRATE);  
@@ -491,7 +496,7 @@ void controlRobotVelocity(){
     if (maps.trackSlow) {
       // planner forces slow tracking (e.g. docking etc)
       linear = 0.1; 
-      angular = 2.0 * diffDelta + 2.0 * lateralError;       // correct for path errors 
+      angular = 0.5 * diffDelta + 0.5 * lateralError;       // correct for path errors 
     } 
     else {                
       bool straight = maps.nextPointIsStraight();
@@ -574,6 +579,30 @@ void controlRobotVelocity(){
 }
 
 
+// docking via IR reflector 
+// https://www.ebay.de/itm/IR-Hindernis-Vermeidungs-Sensor-fur-Arduino-KY-032-Infrarot-Detektor/182379351623?hash=item2a76a80e47:g:Qb8AAOSwo4pYRr~S
+// https://www.ebay.de/itm/Reflektor-rund-84-mm-fur-Reflex-Reflexions-Lichtschranke-Tor-Antrieb-Schiebetor/300933885600?hash=item46110eaea0:g:o4oAAOxy3zNSmMck
+void docking(){
+  float signal = 0;
+  float dockLinearSpeed = 0.05;  
+  bool value = digitalRead(pinDockingReflector);    
+  if (value == LOW) signal = 1.0;
+  dockSignal = 0.9 * dockSignal + 0.1 * signal;
+  if (dockSignal > 0.1){  
+    // reflection    
+    foundDockSignal = true;
+  } else if (dockSignal < 0.1) {
+    // no reflection
+    if (foundDockSignal){
+      dockAngularSpeed *= -1; 
+      foundDockSignal = false;
+    }        
+  }
+  motor.setLinearAngularSpeed(dockLinearSpeed, dockAngularSpeed);    
+  //CONSOLE.println(v);
+}
+
+
 // robot main loop
 void run(){  
   buzzer.run();
@@ -617,7 +646,12 @@ void run(){
       }
     }
     if ((stateOp == OP_MOW) ||  (stateOp == OP_DOCK)) {      
-      controlRobotVelocity();      
+      if (stateOp == OP_DOCK){
+        //docking();
+        controlRobotVelocity();       
+      } else {
+        controlRobotVelocity();       
+      }      
       battery.resetIdle();
       if (battery.underVoltage()){
         stateSensor = SENS_BAT_UNDERVOLTAGE;
@@ -636,7 +670,7 @@ void run(){
   processConsole();     
   processBLE();     
   processWifi();
-  outputConsole();    
+  outputConsole();       
 }
 
 
@@ -658,6 +692,7 @@ void setOperation(OperationType op){
         resetMotionMeasurement();                
         maps.setLastTargetPoint(stateX, stateY);        
         stateSensor = SENS_NONE;        
+        foundDockSignal = true;
       } else {
         CONSOLE.println("error: no waypoints!");
         op = stateOp;                

@@ -152,6 +152,7 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define pinSonarLeftTrigger 34         
 #define pinSonarLeftEcho 36
 #define pinPerimeterRight A4       // perimeter
+#define pinDockingReflector A4     // docking IR reflector
 #define pinPerimeterLeft A5
 
 #define pinLED 13                  // LED
