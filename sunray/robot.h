@@ -16,7 +16,7 @@
 #include "WiFiEsp.h"
 
 
-#define VER "Ardumower Sunray,1.0.42"
+#define VER "Ardumower Sunray,1.0.43"
 
 enum OperationType {
       OP_IDLE,      
@@ -33,6 +33,7 @@ enum Sensor {
       SENS_GPS_FIX_TIMEOUT,
       SENS_IMU_TIMEOUT,
       SENS_IMU_TILT,
+      SENS_KIDNAPPED,
 };
 
 extern OperationType stateOp; // operation

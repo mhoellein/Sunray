@@ -480,6 +480,13 @@ void controlRobotVelocity(){
   float lastTargetDist = maps.distanceToLastTargetPoint(stateX, stateY);
   bool targetReached = (targetDist < 0.05);    
   
+  if (fabs(lateralError) > 1.0){ // actually, this should not happen (except something strange is going on...)
+    CONSOLE.println("kidnapped!");
+    stateSensor = SENS_KIDNAPPED;
+    setOperation(OP_ERROR);
+    buzzer.sound(SND_STUCK, true);        
+  }
+  
   // allow rotations only near last or next waypoint
   if ((targetDist < 0.5) || (lastTargetDist < 0.5)) {
     angleToTargetFits = (fabs(diffDelta)/PI*180.0 < 20);    
@@ -507,8 +514,8 @@ void controlRobotVelocity(){
     if (maps.trackSlow) {
       // planner forces slow tracking (e.g. docking etc)
       linear = 0.1;           
-    } else if (     ((setSpeed > 0.2) && (maps.distanceToTargetPoint(stateX, stateY) < 0.3) && (!straight))
-          || ((linearMotionStartTime != 0) && (millis() < linearMotionStartTime + 3000))              
+    } else if (     ((setSpeed > 0.2) && (maps.distanceToTargetPoint(stateX, stateY) < 0.3) && (!straight))   // approaching
+          || ((linearMotionStartTime != 0) && (millis() < linearMotionStartTime + 3000))                      // leaving  
        ) 
     {
       linear = 0.1; // reduce speed when approaching/leaving waypoints          
