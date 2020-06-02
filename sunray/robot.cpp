@@ -229,6 +229,7 @@ void startIMU(bool forceIMU){
 // SCL/SDA lines) and the I2C bus on the pcb1.3 (and the arduino library) hangs and communication is delayed. 
 // We check if the communication is significantly (10ms instead of 1ms) delayed, if so we restart the I2C 
 // bus (by clocking out any garbage on the I2C bus) and then restarting the IMU module.
+// https://learn.sparkfun.com/tutorials/9dof-razor-imu-m0-hookup-guide/using-the-mpu-9250-dmp-arduino-library
 void readIMU(){
   if (!imuFound) return;
   // Check for new data in the FIFO  
@@ -254,22 +255,26 @@ void readIMU(){
     {      
       // computeEulerAngles can be used -- after updating the
       // quaternion values -- to estimate roll, pitch, and yaw
-      imu.computeEulerAngles();      
+      imu.computeEulerAngles(false);      
       #ifdef ENABLE_TILT_DETECTION
-        if ((fabs(scale180(imu.roll)) > 60) || (fabs(scale180(imu.pitch)) > 100)){
+        if ((fabs(scalePI(imu.roll)) > 60.0/180.0*PI) || (fabs(scalePI(imu.pitch)) > 100.0/180.0*PI)){
           CONSOLE.println("ERROR IMU tilt");
           CONSOLE.print("imu data: ");
-          CONSOLE.print(scale180(imu.yaw));
+          CONSOLE.print(imu.yaw/PI*180.0);
           CONSOLE.print(",");
-          CONSOLE.print(scale180(imu.pitch));
+          CONSOLE.print(imu.pitch/PI*180.0);
           CONSOLE.print(",");
-          CONSOLE.println(scale180(imu.roll));
+          CONSOLE.println(imu.roll/PI*180.0);
           stateSensor = SENS_IMU_TILT;
           setOperation(OP_ERROR);
         }            
       #endif
-      stateDeltaIMU = distancePI(imu.yaw/180.0*PI, lastIMUYaw);  
-      lastIMUYaw = imu.yaw/180.0*PI;      
+      stateDeltaIMU = scalePI ( distancePI(scalePI(imu.yaw), lastIMUYaw) );  
+      //CONSOLE.print(imu.yaw);
+      //CONSOLE.print(",");
+      //CONSOLE.print(stateDeltaIMU/PI*180.0);
+      //CONSOLE.println();
+      lastIMUYaw = scalePI(imu.yaw);      
       imuDataTimeout = millis() + 10000;
     }     
   }  
