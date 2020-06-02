@@ -151,7 +151,7 @@ bool Map::nextPointIsStraight(){
   angleNext = scalePIangles(angleNext, angleCurr);                    
   float diffDelta = distancePI(angleCurr, angleNext);                 
   //CONSOLE.println(fabs(diffDelta)/PI*180.0);
-  return ((fabs(diffDelta)/PI*180.0) <= 20);
+  return ((fabs(diffDelta)/PI*180.0) < 20);
 }
 
 void Map::setRobotStatePosToDockingPos(float &x, float &y, float &delta){

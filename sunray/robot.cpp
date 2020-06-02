@@ -482,7 +482,7 @@ void controlRobotVelocity(){
   
   // allow rotations only near last or next waypoint
   if ((targetDist < 0.5) || (lastTargetDist < 0.5)) {
-    angleToTargetFits = (fabs(diffDelta)/PI*180.0 < 10);    
+    angleToTargetFits = (fabs(diffDelta)/PI*180.0 < 20);    
   } else angleToTargetFits = true;
 
                
