@@ -134,6 +134,13 @@ float Map::distanceToTargetPoint(float stateX, float stateY){
   return targetDist;
 }
 
+float Map::distanceToLastTargetPoint(float stateX, float stateY){  
+  float dX = lastTargetPoint.x - stateX;
+  float dY = lastTargetPoint.y - stateY;
+  float targetDist = sqrt( sq(dX) + sq(dY) );    
+  return targetDist;
+}
+
 // check if path from last target to target to next target is a curve
 bool Map::nextPointIsStraight(){
   if (wayMode != WAY_MOW) return false;

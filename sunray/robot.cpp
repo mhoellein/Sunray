@@ -410,7 +410,8 @@ void computeRobotState(){
       resetLastPos = false;
       lastPosN = posN;
       lastPosE = posE;
-    } else if (distGPS > 0.1){       
+    } else if ( ((gps.solution == UBLOX::SOL_FIXED) && (distGPS > 0.1)) 
+            || ((gps.solution == UBLOX::SOL_FLOAT) && (distGPS > 0.2)) )  {       
       if (fabs(motor.linearSpeedSet) > 0){ 
         stateDeltaGPS = scalePI(atan2(posN-lastPosN, posE-lastPosE));    
         if (motor.linearSpeedSet < 0) stateDeltaGPS = scalePI(stateDeltaGPS + PI); // consider if driving reverse
@@ -474,13 +475,17 @@ void controlRobotVelocity(){
   if (maps.trackReverse) targetDelta = scalePI(targetDelta + PI);
   targetDelta = scalePIangles(targetDelta, stateDelta);
   float diffDelta = distancePI(stateDelta, targetDelta);                         
-  float lateralError = distanceLine(stateX, stateY, lastTarget.x, lastTarget.y, target.x, target.y);      
-          
-  bool angleWide = (fabs(diffDelta)/PI*180.0 < 20); 
-  bool angleNarrow = (fabs(diffDelta)/PI*180.0 < 10); 
-  if ((!angleToTargetFits) && (angleNarrow)) angleToTargetFits = true;
-  if ((angleToTargetFits) && (!angleWide)) angleToTargetFits = false;
-     
+  float lateralError = distanceLine(stateX, stateY, lastTarget.x, lastTarget.y, target.x, target.y);        
+  float targetDist = maps.distanceToTargetPoint(stateX, stateY);
+  float lastTargetDist = maps.distanceToLastTargetPoint(stateX, stateY);
+  bool targetReached = (targetDist < 0.05);    
+  
+  // allow rotations only near last or next waypoint
+  if ((targetDist < 0.5) || (lastTargetDist < 0.5)) {
+    angleToTargetFits = (fabs(diffDelta)/PI*180.0 < 10);    
+  } else angleToTargetFits = true;
+
+               
   if (!angleToTargetFits){
     // angular control (if angle to far away, rotate to next waypoint)
     linear = 0;
@@ -497,7 +502,7 @@ void controlRobotVelocity(){
     }
   } 
   else {
-    // line control (if angle ok, follow path to next waypoint)                         
+    // line control (stanley)
     bool straight = maps.nextPointIsStraight();
     if (maps.trackSlow) {
       // planner forces slow tracking (e.g. docking etc)
@@ -528,8 +533,8 @@ void controlRobotVelocity(){
     //CONSOLE.print(lateralError);        
     //CONSOLE.print(",");        
     //CONSOLE.println(angular/PI*180.0);            
-    if (maps.trackReverse) linear *= -1;   // reverse line tracking
-    //angular = max(-PI/180*20, min(PI/180*20, angular)); // restrict steering angle
+    if (maps.trackReverse) linear *= -1;   // reverse line tracking needs negative speed
+    angular = max(-PI/16, min(PI/16, angular)); // restrict steering angle for stanley
   }
   if (fixTimeout != 0){
     if (millis() > lastFixTime + fixTimeout * 1000.0){
@@ -555,14 +560,10 @@ void controlRobotVelocity(){
     } else {
       resetMotionMeasurement();
     }  
-  }
-    
-  bool targetReached = false;
-  targetReached = (maps.distanceToTargetPoint(stateX, stateY) < 0.05);  
-  
-    
+  }     
+   
   if (targetReached){
-    // next waypoint
+    bool straight = maps.nextPointIsStraight();
     if (!maps.nextPoint(false)){
       // finish        
       if (stateOp == OP_DOCK){
@@ -575,6 +576,9 @@ void controlRobotVelocity(){
           //setOperation(OP_DOCK);             
         }                   
       }
+    } else {      
+      // next waypoint          
+      //if (!straight) angleToTargetFits = false;      
     }
   }  
 }

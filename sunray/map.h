@@ -99,6 +99,7 @@ class Map
     void setLastTargetPoint(float stateX, float stateY);
     // distance to target waypoint
     float distanceToTargetPoint(float stateX, float stateY);    
+    float distanceToLastTargetPoint(float stateX, float stateY);
     // go to next waypoint
     bool nextPoint(bool sim);
     // next point is straight and not a sharp curve?   

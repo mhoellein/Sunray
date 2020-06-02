@@ -340,12 +340,12 @@ void Motor::test(){
   odoTicksRight = 0;  
   unsigned long nextInfoTime = 0;
   int seconds = 0;
-  speedPWM(MOTOR_LEFT, 100);
-  speedPWM(MOTOR_RIGHT, 100);       
+  speedPWM(MOTOR_LEFT, 200);
+  speedPWM(MOTOR_RIGHT, 200);       
   bool slowdown = true;
   uint16_t stopTicks = ticksPerRevolution * 10;
-  while (odoTicksLeft < stopTicks){
-    if ((slowdown) && (odoTicksLeft + 50 > stopTicks)){
+  while (odoTicksLeft < stopTicks || odoTicksRight < stopTicks){
+    if ((slowdown) && ((odoTicksLeft + ticksPerRevolution / 2 > stopTicks)||(odoTicksRight + ticksPerRevolution / 2 > stopTicks))){  //Letzte halbe drehung verlangsamen
       speedPWM(MOTOR_LEFT, 20);
       speedPWM(MOTOR_RIGHT, 20);       
       slowdown = false;
@@ -354,14 +354,23 @@ void Motor::test(){
       nextInfoTime = millis() + 1000;      
       CONSOLE.print("t=");
       CONSOLE.print(seconds);
-      CONSOLE.print("  ticks=");
-      CONSOLE.println(odoTicksLeft);      
+      CONSOLE.print("  ticks Left=");
+      CONSOLE.print(odoTicksLeft);  
+      CONSOLE.print("  ticks Right=");
+      CONSOLE.println(odoTicksRight);       
       seconds++;
     }    
+    if(odoTicksLeft >= stopTicks)
+    {
+      speedPWM(MOTOR_LEFT, 0);
+    }  
+    if(odoTicksRight >= stopTicks)
+    {
+      speedPWM(MOTOR_RIGHT, 0);
+    }
     delay(1);
   }
   speedPWM(MOTOR_LEFT, 0);
   speedPWM(MOTOR_RIGHT, 0);  
   DEBUGLN(F("motor test done"));
 }
-
