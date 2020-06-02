@@ -54,7 +54,7 @@ class Map
     bool trackReverse; // get to target in reverse?
     bool trackSlow;    // get to target slowly?
     bool useGPSfloatForPosEstimation;    // use GPS float solution for position estimation?
-    bool useGPSForDeltaEstimation;  // use GPS solution for delta estimation?
+    bool useGPSfloatForDeltaEstimation;  // use GPS float solution for delta estimation?
     bool useIMU; // allow using IMU?
     
     // keeps track of the progress in the different point types

@@ -56,6 +56,7 @@ bool finishAndRestart = false;
 bool resetLastPos = true;
 bool rotateLeft = false;
 bool rotateRight = false;
+bool angleToTargetFits = false;
 bool stateChargerConnected = false;
 
 UBLOX::SolType lastSolution = UBLOX::SOL_INVALID;    
@@ -412,16 +413,20 @@ void computeRobotState(){
     } else if (distGPS > 0.1){       
       if (fabs(motor.linearSpeedSet) > 0){ 
         stateDeltaGPS = scalePI(atan2(posN-lastPosN, posE-lastPosE));    
-        if (motor.linearSpeedSet < 0) stateDeltaGPS = scalePI(stateDeltaGPS + PI);
+        if (motor.linearSpeedSet < 0) stateDeltaGPS = scalePI(stateDeltaGPS + PI); // consider if driving reverse
         //stateDeltaGPS = scalePI(2*PI-gps.heading+PI/2);
         float diffDelta = distancePI(stateDelta, stateDeltaGPS);                 
-        if (fabs(diffDelta/PI*180) > 45){ // IMU-based heading too far away => use GPS heading
-          stateDelta = stateDeltaGPS;
-          stateDeltaIMU = 0;
-        } else {
-          // delta fusion (complementary filter, see above comment)
-          stateDeltaGPS = scalePIangles(stateDeltaGPS, stateDelta);
-          stateDelta = scalePI(fusionPI(0.9, stateDelta, stateDeltaGPS));               
+        if (    (gps.solution == UBLOX::SOL_FIXED)
+             || ((gps.solution == UBLOX::SOL_FLOAT) && (maps.useGPSfloatForDeltaEstimation)) )
+        {   // allows planner to use float solution?         
+          if (fabs(diffDelta/PI*180) > 45){ // IMU-based heading too far away => use GPS heading
+            stateDelta = stateDeltaGPS;
+            stateDeltaIMU = 0;
+          } else {
+            // delta fusion (complementary filter, see above comment)
+            stateDeltaGPS = scalePIangles(stateDeltaGPS, stateDelta);
+            stateDelta = scalePI(fusionPI(0.9, stateDelta, stateDeltaGPS));               
+          }            
         }
       }
       lastPosN = posN;
@@ -458,6 +463,8 @@ void computeRobotState(){
 
 
 // control robot velocity (linear,angular) to track line to next waypoint (target)
+// uses a stanley controller for line tracking
+// https://medium.com/@dingyan7361/three-methods-of-vehicle-lateral-control-pure-pursuit-stanley-and-mpc-db8cc1d32081
 void controlRobotVelocity(){  
   pt_t target = maps.targetPoint;
   pt_t lastTarget = maps.lastTargetPoint;
@@ -469,12 +476,10 @@ void controlRobotVelocity(){
   float diffDelta = distancePI(stateDelta, targetDelta);                         
   float lateralError = distanceLine(stateX, stateY, lastTarget.x, lastTarget.y, target.x, target.y);      
           
-  bool angleToTargetFits = false;
-  if (maps.trackSlow){
-    angleToTargetFits = (fabs(diffDelta)/PI*180.0 < 10); 
-  } else {
-    angleToTargetFits = (fabs(diffDelta)/PI*180.0 < 20); 
-  }  
+  bool angleWide = (fabs(diffDelta)/PI*180.0 < 20); 
+  bool angleNarrow = (fabs(diffDelta)/PI*180.0 < 10); 
+  if ((!angleToTargetFits) && (angleNarrow)) angleToTargetFits = true;
+  if ((angleToTargetFits) && (!angleWide)) angleToTargetFits = false;
      
   if (!angleToTargetFits){
     // angular control (if angle to far away, rotate to next waypoint)
@@ -493,38 +498,38 @@ void controlRobotVelocity(){
   } 
   else {
     // line control (if angle ok, follow path to next waypoint)                         
+    bool straight = maps.nextPointIsStraight();
     if (maps.trackSlow) {
       // planner forces slow tracking (e.g. docking etc)
-      linear = 0.1; 
-      angular = 0.5 * diffDelta + 0.5 * lateralError;       // correct for path errors 
+      linear = 0.1;           
+    } else if (     ((setSpeed > 0.2) && (maps.distanceToTargetPoint(stateX, stateY) < 0.3) && (!straight))
+          || ((linearMotionStartTime != 0) && (millis() < linearMotionStartTime + 3000))              
+       ) 
+    {
+      linear = 0.1; // reduce speed when approaching/leaving waypoints          
     } 
-    else {                
-      bool straight = maps.nextPointIsStraight();
-      if (     ((setSpeed > 0.2) && (maps.distanceToTargetPoint(stateX, stateY) < 0.3) && (!straight))
-            || ((linearMotionStartTime != 0) && (millis() < linearMotionStartTime + 3000))              
-         ) 
-      {
-        linear = 0.1; // reduce speed when approaching/leaving waypoints          
-      } 
-      else {
-        if (gps.solution == UBLOX::SOL_FLOAT)        
-          linear = min(setSpeed, 0.1); // reduce speed for float solution
-        else
-          linear = setSpeed;         // desired speed
-      }
-      angular = 3.0 * diffDelta + 3.0 * lateralError;       // correct for path errors           
-      /*pidLine.w = 0;              
-      pidLine.x = lateralError;
-      pidLine.max_output = PI;
-      pidLine.y_min = -PI;
-      pidLine.y_max = PI;
-      pidLine.compute();
-      angular = -pidLine.y;   */
-      //CONSOLE.print(lateralError);        
-      //CONSOLE.print(",");        
-      //CONSOLE.println(angular/PI*180.0);        
-    }
-    if (maps.trackReverse) linear *= -1;
+    else {
+      if (gps.solution == UBLOX::SOL_FLOAT)        
+        linear = min(setSpeed, 0.1); // reduce speed for float solution
+      else
+        linear = setSpeed;         // desired speed
+    }      
+    //angular = 3.0 * diffDelta + 3.0 * lateralError;       // correct for path errors 
+    float k = 0.5;
+    if (maps.trackSlow) k = 0.1;
+    angular = diffDelta + atan2(k * lateralError, (0.001 + fabs(motor.linearSpeedSet)));       // correct for path errors           
+    /*pidLine.w = 0;              
+    pidLine.x = lateralError;
+    pidLine.max_output = PI;
+    pidLine.y_min = -PI;
+    pidLine.y_max = PI;
+    pidLine.compute();
+    angular = -pidLine.y;   */
+    //CONSOLE.print(lateralError);        
+    //CONSOLE.print(",");        
+    //CONSOLE.println(angular/PI*180.0);            
+    if (maps.trackReverse) linear *= -1;   // reverse line tracking
+    //angular = max(-PI/180*20, min(PI/180*20, angular)); // restrict steering angle
   }
   if (fixTimeout != 0){
     if (millis() > lastFixTime + fixTimeout * 1000.0){
@@ -536,7 +541,7 @@ void controlRobotVelocity(){
     } else {
       if (stateSensor == SENS_GPS_FIX_TIMEOUT) stateSensor = SENS_NONE; // clear fix timeout
     }       
-  }                  
+  }     
   motor.setLinearAngularSpeed(linear, angular);    
   if ((gps.solution == UBLOX::SOL_FIXED) || (gps.solution == UBLOX::SOL_FLOAT)){        
     if (linear > 0.06) {
@@ -553,11 +558,7 @@ void controlRobotVelocity(){
   }
     
   bool targetReached = false;
-  if (maps.trackSlow){
-    targetReached = (maps.distanceToTargetPoint(stateX, stateY) < 0.05);
-  } else {
-    targetReached = (maps.distanceToTargetPoint(stateX, stateY) < 0.1);
-  }
+  targetReached = (maps.distanceToTargetPoint(stateX, stateY) < 0.05);  
   
     
   if (targetReached){
