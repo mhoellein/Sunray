@@ -418,8 +418,7 @@ void computeRobotState(){
       resetLastPos = false;
       lastPosN = posN;
       lastPosE = posE;
-    } else if ( ((gps.solution == UBLOX::SOL_FIXED) && (distGPS > 0.1)) 
-            || ((gps.solution == UBLOX::SOL_FLOAT) && (distGPS > 0.2)) )  {       
+    } else if (distGPS > 0.1) {       
       if (fabs(motor.linearSpeedSet) > 0){ 
         stateDeltaGPS = scalePI(atan2(posN-lastPosN, posE-lastPosE));    
         if (motor.linearSpeedSet < 0) stateDeltaGPS = scalePI(stateDeltaGPS + PI); // consider if driving reverse
