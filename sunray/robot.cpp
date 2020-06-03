@@ -269,12 +269,15 @@ void readIMU(){
           setOperation(OP_ERROR);
         }            
       #endif
-      stateDeltaIMU = scalePI ( distancePI(scalePI(imu.yaw), lastIMUYaw) );  
+      imu.yaw = scalePI(imu.yaw);
+      lastIMUYaw = scalePI(lastIMUYaw);
+      lastIMUYaw = scalePIangles(lastIMUYaw, imu.yaw);
+      stateDeltaIMU = scalePI ( distancePI(imu.yaw, lastIMUYaw) );  
       //CONSOLE.print(imu.yaw);
       //CONSOLE.print(",");
       //CONSOLE.print(stateDeltaIMU/PI*180.0);
       //CONSOLE.println();
-      lastIMUYaw = scalePI(imu.yaw);      
+      lastIMUYaw = imu.yaw;      
       imuDataTimeout = millis() + 10000;
     }     
   }  
