@@ -220,6 +220,7 @@ void startIMU(bool forceIMU){
     buzzer.sound(SND_PROGRESS, true);        
     unsigned long stopTime = millis() + 1000;
     while (millis() < stopTime) buzzer.run();
+    watchdogReset();     
   }
   CONSOLE.println();    
   imu.resetFifo();
@@ -355,7 +356,7 @@ void start(){
   
   buzzer.sound(SND_READY);  
   battery.allowSwitchOff(true);  
-  watchdogEnable(20000L);   // 20 seconds  
+  watchdogEnable(10000L);   // 10 seconds  
 }
 
 // calculate statistics

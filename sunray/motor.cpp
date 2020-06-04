@@ -369,6 +369,7 @@ void Motor::test(){
       speedPWM(MOTOR_RIGHT, 0);
     }
     delay(1);
+    watchdogReset();     
   }
   speedPWM(MOTOR_LEFT, 0);
   speedPWM(MOTOR_RIGHT, 0);  
