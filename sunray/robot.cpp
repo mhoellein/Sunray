@@ -97,6 +97,10 @@ bool foundDockSignal = true;
 float dockAngularSpeed = 0.1;
 
 
+// must be defined to override default behavior
+void watchdogSetup (void){} 
+
+
 // get free memory
 int freeMemory() {
   char top;
@@ -311,13 +315,14 @@ bool checkAT24C32() {
   return (r == 1);
 }
 
+
 // robot start routine
 void start(){  
-  pinMan.begin();     
+  pinMan.begin();       
   // keep battery switched ON
   pinMode(pinBatterySwitch, OUTPUT);    
   pinMode(pinDockingReflector, INPUT);
-  digitalWrite(pinBatterySwitch, HIGH);  
+  digitalWrite(pinBatterySwitch, HIGH);       
   buzzer.begin();      
   CONSOLE.begin(CONSOLE_BAUDRATE);  
   Wire.begin();      
@@ -342,14 +347,15 @@ void start(){
   motor.begin();
   gps.begin();   
   maps.begin();
-  
+    
   startIMU(false);      
   
   // initialize ESP module
   startWIFI();  
   
   buzzer.sound(SND_READY);  
-  battery.allowSwitchOff(true);
+  battery.allowSwitchOff(true);  
+  watchdogEnable(20000L);   // 20 seconds  
 }
 
 // calculate statistics
@@ -472,6 +478,7 @@ void computeRobotState(){
 
 // control robot velocity (linear,angular) to track line to next waypoint (target)
 // uses a stanley controller for line tracking
+// https://wiki.ardumower.de/index.php?title=Ardumower_Sunray#How_the_line_tracking_works
 // https://medium.com/@dingyan7361/three-methods-of-vehicle-lateral-control-pure-pursuit-stanley-and-mpc-db8cc1d32081
 void controlRobotVelocity(){  
   pt_t target = maps.targetPoint;
@@ -690,6 +697,7 @@ void run(){
   processBLE();     
   processWifi();
   outputConsole();       
+  watchdogReset();     
 }
 
 
