@@ -41,6 +41,8 @@ unsigned long controlLoops = 0;
 float stateX = 0;  // position-east (m)
 float stateY = 0;  // position-north (m)
 float stateDelta = 0;  // direction (rad)
+float stateRoll = 0;
+float statePitch = 0;
 float stateDeltaGPS = 0;
 float stateDeltaIMU = 0;
 float stateGroundSpeed = 0; // m/s
@@ -58,6 +60,8 @@ bool rotateLeft = false;
 bool rotateRight = false;
 bool angleToTargetFits = false;
 bool stateChargerConnected = false;
+float rollChange = 0;
+float pitchChange = 0;
 
 UBLOX::SolType lastSolution = UBLOX::SOL_INVALID;    
 unsigned long nextStatTime = 0;
@@ -262,7 +266,18 @@ void readIMU(){
       // quaternion values -- to estimate roll, pitch, and yaw
       imu.computeEulerAngles(false);      
       #ifdef ENABLE_TILT_DETECTION
-        if ((fabs(scalePI(imu.roll)) > 60.0/180.0*PI) || (fabs(scalePI(imu.pitch)) > 100.0/180.0*PI)){
+        rollChange += (imu.roll-stateRoll);
+        pitchChange += (imu.pitch-statePitch);               
+        rollChange = 0.99 * rollChange;
+        pitchChange = 0.99 * pitchChange;
+        statePitch = imu.pitch;
+        stateRoll = imu.roll;
+        /*
+        CONSOLE.print(rollChange/PI*180.0);
+        CONSOLE.print(",");
+        CONSOLE.println(pitchChange/PI*180.0);*/
+        if ( (fabs(scalePI(imu.roll)) > 60.0/180.0*PI) || (fabs(scalePI(imu.pitch)) > 100.0/180.0*PI)
+             || (fabs(rollChange) > 40) || (fabs(pitchChange) > 40)   )  {
           CONSOLE.println("ERROR IMU tilt");
           CONSOLE.print("imu data: ");
           CONSOLE.print(imu.yaw/PI*180.0);
@@ -272,7 +287,7 @@ void readIMU(){
           CONSOLE.println(imu.roll/PI*180.0);
           stateSensor = SENS_IMU_TILT;
           setOperation(OP_ERROR);
-        }            
+        }           
       #endif
       imu.yaw = scalePI(imu.yaw);
       lastIMUYaw = scalePI(lastIMUYaw);
