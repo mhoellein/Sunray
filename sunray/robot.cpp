@@ -502,7 +502,7 @@ void computeRobotState(){
 void controlRobotVelocity(){  
   pt_t target = maps.targetPoint;
   pt_t lastTarget = maps.lastTargetPoint;
-  float linear = 1.0;
+  float linear = 1.0;  
   float angular = 0;      
   float targetDelta = pointsAngle(stateX, stateY, target.x, target.y);      
   if (maps.trackReverse) targetDelta = scalePI(targetDelta + PI);
@@ -513,13 +513,30 @@ void controlRobotVelocity(){
   float lastTargetDist = maps.distanceToLastTargetPoint(stateX, stateY);
   bool targetReached = (targetDist < 0.05);    
   
+  if ( (motor.motorLeftOverload) || (motor.motorRightOverload) || (motor.motorMowOverload) ){
+    linear = 0.1;  
+  }
+  if (motor.motorOverloadDuration > 5000){
+    CONSOLE.println("overload!");
+    stateSensor = SENS_OVERLOAD;
+    setOperation(OP_ERROR);
+    buzzer.sound(SND_STUCK, true);        
+  }  
+  if (motor.motorError){
+    motor.motorError = false;
+    CONSOLE.println("motor error!");
+    stateSensor = SENS_MOTOR_ERROR;
+    setOperation(OP_ERROR);
+    buzzer.sound(SND_STUCK, true);        
+  }  
+  
   if (fabs(lateralError) > 1.0){ // actually, this should not happen (except something strange is going on...)
     CONSOLE.println("kidnapped!");
     stateSensor = SENS_KIDNAPPED;
     setOperation(OP_ERROR);
     buzzer.sound(SND_STUCK, true);        
   }
-  
+    
   // allow rotations only near last or next waypoint
   if ((targetDist < 0.5) || (lastTargetDist < 0.5)) {
     angleToTargetFits = (fabs(diffDelta)/PI*180.0 < 20);    

@@ -5,6 +5,7 @@
 
 #include "motor.h"
 #include "config.h"
+#include "helper.h"
 #include "robot.h"
 #include "Arduino.h"
 
@@ -52,11 +53,7 @@ void Motor::begin() {
   pinMode(pinOdometryLeft2, INPUT_PULLUP);
   pinMode(pinOdometryRight, INPUT_PULLUP);
   pinMode(pinOdometryRight2, INPUT_PULLUP);
-	
-  pinMode(pinMotorMowSense, INPUT);
-  pinMode(pinMotorLeftSense, INPUT);
-  pinMode(pinMotorRightSense, INPUT);  
- 
+	  
   // enable interrupts
   attachInterrupt(pinOdometryLeft, OdometryLeftInt, RISING);  
   attachInterrupt(pinOdometryRight, OdometryRightInt, RISING);  
@@ -83,6 +80,20 @@ void Motor::begin() {
   motorLeftSwapDir = false;
   motorRightSwapDir = false;
   motorError = false;
+  resetMotorFault = false;
+  resetMotorFaultCounter = 0;
+  nextResetMotorFaultTime = 0;
+  
+  motorLeftOverload = false;
+  motorRightOverload = false;
+  motorMowOverload = false; 
+  
+  motorLeftSense = 0;
+  motorRightSense = 0;
+  motorMowSense = 0;  
+  motorLeftSenseLP = 0;
+  motorRightSenseLP = 0;
+  motorMowSenseLP = 0;
 
   linearSpeedSet = 0;
   angularSpeedSet = 0;
@@ -93,6 +104,7 @@ void Motor::begin() {
   toggleMowDir = MOW_TOGGLE_DIR;
 
   lastControlTime = 0;
+  nextSenseTime = 0;
   motorLeftTicks =0;  
   motorRightTicks =0;
   motorLeftTicksZero=0;
@@ -208,6 +220,7 @@ void Motor::stopControl(){
 
 void Motor::run() {
   if (millis() < lastControlTime + 50) return;
+  
   if (setLinearAngularSpeedTimeoutActive){
     if (millis() > setLinearAngularSpeedTimeout){
       setLinearAngularSpeedTimeoutActive = false;
@@ -247,12 +260,119 @@ void Motor::run() {
   } else motorRightTicksZero = 0;
 
   
-  control();
+  control();  
   checkFault();
-  if (motorError){
-    resetFault();
+  sense();        
+  
+  if (resetMotorFault) {    
+    if (millis() > nextResetMotorFaultTime){
+      nextResetMotorFaultTime = millis() + 1000;
+      resetFault();
+      resetMotorFaultCounter++;  
+      if (resetMotorFaultCounter > 10){
+        stopControl();
+        CONSOLE.println("ERROR: motor recovery failed");
+        motorError = true;
+      }
+    }
+  } else {
+    resetMotorFaultCounter = 0;  
+    if  (    ((abs(motorMowPWMCurr) > 100) && (motorMowSenseLP < 0.001)) 
+         ||  ((abs(motorLeftPWMCurr) > 100) && (motorLeftSenseLP < 0.001))    
+         ||  ((abs(motorRightPWMCurr) > 100) && (motorRightSenseLP < 0.001))  ){    
+      stopControl();
+      CONSOLE.print("ERROR: motor malfunction pwm=");
+      CONSOLE.print(motorLeftPWMCurr);
+      CONSOLE.print(",");
+      CONSOLE.print(motorRightPWMCurr);
+      CONSOLE.print(",");
+      CONSOLE.print(motorMowPWMCurr);
+      CONSOLE.print("  sense=");
+      CONSOLE.print(motorLeftSense);
+      CONSOLE.print(",");
+      CONSOLE.print(motorRightSense);
+      CONSOLE.print(",");
+      CONSOLE.println(motorMowSense);
+      motorError = true;
+    }
+  }   
+}  
+
+
+void Motor::resetFault() {
+  resetMotorFault = false;  
+  if (digitalRead(pinMotorLeftFault) == LOW) {
+    digitalWrite(pinMotorEnable, LOW);
+    digitalWrite(pinMotorEnable, HIGH);
+    CONSOLE.println("Reset motor left fault");
+  }
+  if  (digitalRead(pinMotorRightFault) == LOW) {
+    digitalWrite(pinMotorEnable, LOW);
+    digitalWrite(pinMotorEnable, HIGH);
+    CONSOLE.println("Reset motor right fault");
+  }
+  if (digitalRead(pinMotorMowFault) == LOW) {
+    digitalWrite(pinMotorMowEnable, LOW);
+    digitalWrite(pinMotorMowEnable, HIGH);
+    CONSOLE.println("Reset motor mow fault");
   }
 }
+
+
+// check motor faults
+void Motor::checkFault() {
+  if (resetMotorFault) return;
+  if (digitalRead(pinMotorLeftFault) == LOW) {
+    CONSOLE.println("Error: motor left fault");
+    stopControl();
+    resetMotorFault = true;        
+    nextResetMotorFaultTime = millis() + 1000;
+  }
+  if  (digitalRead(pinMotorRightFault) == LOW) {
+    CONSOLE.println("Error: motor right fault"); 
+    stopControl();
+    resetMotorFault = true;        
+    nextResetMotorFaultTime = millis() + 1000;
+  }
+  if (digitalRead(pinMotorMowFault) == LOW) {
+    CONSOLE.println("Error: motor mow fault");
+    stopControl();
+    resetMotorFault = true;            
+    nextResetMotorFaultTime = millis() + 1000;
+  }
+}
+  
+
+// measure motor currents
+void Motor::sense(){
+  if (millis() < nextSenseTime) return;
+  nextSenseTime = millis() + 20;
+  float scale       = 1.905;   // ADC voltage to amp   
+  motorRightSense = ((float)ADC2voltage(analogRead(pinMotorRightSense))) *scale;
+  motorLeftSense = ((float)ADC2voltage(analogRead(pinMotorLeftSense))) *scale;
+  motorMowSense = ((float)ADC2voltage(analogRead(pinMotorMowSense))) *scale  *2;	      
+  motorRightSenseLP = 0.95 * motorRightSenseLP + 0.05 * motorRightSense;
+  motorLeftSenseLP = 0.95 * motorLeftSenseLP + 0.05 * motorLeftSense;
+  motorMowSenseLP = 0.95 * motorMowSenseLP + 0.05 * motorMowSense; 
+ 
+  motorLeftOverload = (motorLeftSenseLP > 1.0);
+  motorRightOverload = (motorRightSenseLP > 1.0);
+  motorMowOverload = (motorMowSenseLP > 3.0);
+  if (motorLeftOverload || motorRightOverload || motorMowOverload){
+    motorOverloadDuration += 20;    
+    CONSOLE.print("ERROR motor overload duration=");
+    CONSOLE.print(motorOverloadDuration);
+    CONSOLE.print("  current=");
+    CONSOLE.print(motorLeftSenseLP);
+    CONSOLE.print(",");
+    CONSOLE.print(motorRightSenseLP);
+    CONSOLE.print(",");
+    CONSOLE.println(motorMowSenseLP); 
+  } else {
+    motorOverloadDuration = 0;
+  }  
+}
+
 
 void Motor::control(){  
   /*CONSOLE.print("rpm set=");
@@ -294,48 +414,8 @@ void Motor::control(){
 }
 
 
-void Motor::resetFault() {
-  motorError = false;
-  if (digitalRead(pinMotorLeftFault) == LOW) {
-    digitalWrite(pinMotorEnable, LOW);
-    digitalWrite(pinMotorEnable, HIGH);
-    DEBUGLN(F("Reset motor left fault"));
-  }
-  if  (digitalRead(pinMotorRightFault) == LOW) {
-    digitalWrite(pinMotorEnable, LOW);
-    digitalWrite(pinMotorEnable, HIGH);
-    DEBUGLN(F("Reset motor right fault"));
-  }
-  if (digitalRead(pinMotorMowFault) == LOW) {
-    digitalWrite(pinMotorMowEnable, LOW);
-    digitalWrite(pinMotorMowEnable, HIGH);
-    DEBUGLN(F("Reset motor mow fault"));
-  }
-}
-
-
-// handle motor errors
-void Motor::checkFault() {
-  if (motorError) return;
-  if (digitalRead(pinMotorLeftFault) == LOW) {
-    DEBUGLN(F("Error: motor left fault"));
-    stopControl();
-    motorError = true;    
-  }
-  if  (digitalRead(pinMotorRightFault) == LOW) {
-    DEBUGLN(F("Error: motor right fault")); 
-    stopControl();
-    motorError = true;    
-  }
-  if (digitalRead(pinMotorMowFault) == LOW) {
-    DEBUGLN(F("Error: motor mow fault"));
-    stopControl();
-    motorError = true;        
-  }
-}
-
 void Motor::test(){
-  DEBUGLN(F("motor test - 10 revolutions"));
+  CONSOLE.println("motor test - 10 revolutions");
   odoTicksLeft = 0;  
   odoTicksRight = 0;  
   unsigned long nextInfoTime = 0;
@@ -350,15 +430,20 @@ void Motor::test(){
       speedPWM(MOTOR_RIGHT, 20);       
       slowdown = false;
     }    
-    if (millis() > nextInfoTime){
-      nextInfoTime = millis() + 1000;      
+    if (millis() > nextInfoTime){      
+      nextInfoTime = millis() + 1000;            
       CONSOLE.print("t=");
       CONSOLE.print(seconds);
       CONSOLE.print("  ticks Left=");
       CONSOLE.print(odoTicksLeft);  
-      CONSOLE.print("  ticks Right=");
-      CONSOLE.println(odoTicksRight);       
-      seconds++;
+      CONSOLE.print("  Right=");
+      CONSOLE.print(odoTicksRight);             
+      CONSOLE.print("  current Left=");
+      CONSOLE.print(motorLeftSense);
+      CONSOLE.print("  Right=");
+      CONSOLE.print(motorRightSense);
+      CONSOLE.println();             
+      seconds++;      
     }    
     if(odoTicksLeft >= stopTicks)
     {
@@ -368,10 +453,11 @@ void Motor::test(){
     {
       speedPWM(MOTOR_RIGHT, 0);
     }
+    sense();
     delay(1);
     watchdogReset();     
   }
   speedPWM(MOTOR_LEFT, 0);
   speedPWM(MOTOR_RIGHT, 0);  
-  DEBUGLN(F("motor test done"));
+  CONSOLE.println("motor test done");
 }

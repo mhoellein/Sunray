@@ -24,12 +24,22 @@ class Motor {
     bool motorLeftSwapDir;
     bool motorRightSwapDir;
     bool motorError;
+    bool motorLeftOverload; 
+    bool motorRightOverload; 
+    bool motorMowOverload; 
+    unsigned long motorOverloadDuration; // accumulated duration (ms)
     int  pwmMax;
     int  pwmMaxMow;    
     unsigned long motorLeftTicks;
     unsigned long motorRightTicks;    
     float linearSpeedSet; // m/s
     float angularSpeedSet; // rad/s
+    float motorLeftSense; // left motor current (amps)
+    float motorRightSense; // right  motor current (amps)
+    float motorMowSense;  // mower motor current (amps)         
+    float motorLeftSenseLP; // left motor current low-pass
+    float motorRightSenseLP; // right  motor current low-pass
+    float motorMowSenseLP;  // mower motor current low-pass        
     void begin();
     void run();      
     void test();
@@ -49,6 +59,10 @@ class Motor {
     int motorLeftPWMCurr;
     int motorRightPWMCurr;    
     unsigned long lastControlTime;    
+    unsigned long nextSenseTime;            
+    bool resetMotorFault;
+    int resetMotorFaultCounter;
+    unsigned long nextResetMotorFaultTime;
     int motorLeftTicksZero;    
     int motorRightTicksZero;    
     PID motorLeftPID;
@@ -59,6 +73,7 @@ class Motor {
     void setMC33926(int pinDir, int pinPWM, int speed);
     void control();    
     void checkFault();
+    void sense();
     
 };
 
