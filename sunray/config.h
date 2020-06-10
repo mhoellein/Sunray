@@ -110,6 +110,12 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define WIFI_IP   192,168,2,15      // choose IP e.g. 192.168.4.1  (comment out for dynamic IP/DHCP)
 
 
+// ------ experimental options -------------------------
+// drive curves smoothly?
+//#define SMOOTH_CURVES  true
+#define SMOOTH_CURVES  false
+
+
 // ------- I2C addresses -----------------------------
 #define DS1307_ADDRESS B1101000
 #define AT24C32_ADDRESS B1010000

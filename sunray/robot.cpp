@@ -59,6 +59,7 @@ bool resetLastPos = true;
 bool rotateLeft = false;
 bool rotateRight = false;
 bool angleToTargetFits = false;
+bool targetReached = false;
 bool stateChargerConnected = false;
 float rollChange = 0;
 float pitchChange = 0;
@@ -444,7 +445,7 @@ void computeRobotState(){
       lastPosN = posN;
       lastPosE = posE;
     } else if (distGPS > 0.1) {       
-      if (fabs(motor.linearSpeedSet) > 0){ 
+      if ( (fabs(motor.linearSpeedSet) > 0) && (fabs(motor.angularSpeedSet) /PI *180.0 < 45) ) {  
         stateDeltaGPS = scalePI(atan2(posN-lastPosN, posE-lastPosE));    
         if (motor.linearSpeedSet < 0) stateDeltaGPS = scalePI(stateDeltaGPS + PI); // consider if driving reverse
         //stateDeltaGPS = scalePI(2*PI-gps.heading+PI/2);
@@ -510,8 +511,12 @@ void controlRobotVelocity(){
   float diffDelta = distancePI(stateDelta, targetDelta);                         
   float lateralError = distanceLine(stateX, stateY, lastTarget.x, lastTarget.y, target.x, target.y);        
   float targetDist = maps.distanceToTargetPoint(stateX, stateY);
-  float lastTargetDist = maps.distanceToLastTargetPoint(stateX, stateY);
-  bool targetReached = (targetDist < 0.05);    
+  float lastTargetDist = maps.distanceToLastTargetPoint(stateX, stateY);  
+  if (SMOOTH_CURVES)
+    targetReached = (targetDist < 0.3);    
+  else 
+    targetReached = (targetDist < 0.05);    
+  
   
   if ( (motor.motorLeftOverload) || (motor.motorRightOverload) || (motor.motorMowOverload) ){
     linear = 0.1;  
@@ -539,7 +544,10 @@ void controlRobotVelocity(){
     
   // allow rotations only near last or next waypoint
   if ((targetDist < 0.5) || (lastTargetDist < 0.5)) {
-    angleToTargetFits = (fabs(diffDelta)/PI*180.0 < 20);    
+    if (SMOOTH_CURVES)
+      angleToTargetFits = (fabs(diffDelta)/PI*180.0 < 120);          
+    else     
+      angleToTargetFits = (fabs(diffDelta)/PI*180.0 < 20);   
   } else angleToTargetFits = true;
 
                
@@ -591,7 +599,7 @@ void controlRobotVelocity(){
     //CONSOLE.print(",");        
     //CONSOLE.println(angular/PI*180.0);            
     if (maps.trackReverse) linear *= -1;   // reverse line tracking needs negative speed
-    angular = max(-PI/16, min(PI/16, angular)); // restrict steering angle for stanley
+    //angular = max(-PI/16, min(PI/16, angular)); // restrict steering angle for stanley
   }
   if (fixTimeout != 0){
     if (millis() > lastFixTime + fixTimeout * 1000.0){
