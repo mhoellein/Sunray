@@ -513,7 +513,7 @@ void controlRobotVelocity(){
   float targetDist = maps.distanceToTargetPoint(stateX, stateY);
   float lastTargetDist = maps.distanceToLastTargetPoint(stateX, stateY);  
   if (SMOOTH_CURVES)
-    targetReached = (targetDist < 0.3);    
+    targetReached = (targetDist < 0.2);    
   else 
     targetReached = (targetDist < 0.05);    
   
@@ -599,7 +599,7 @@ void controlRobotVelocity(){
     //CONSOLE.print(",");        
     //CONSOLE.println(angular/PI*180.0);            
     if (maps.trackReverse) linear *= -1;   // reverse line tracking needs negative speed
-    //angular = max(-PI/16, min(PI/16, angular)); // restrict steering angle for stanley
+    if (!SMOOTH_CURVES) angular = max(-PI/16, min(PI/16, angular)); // restrict steering angle for stanley
   }
   if (fixTimeout != 0){
     if (millis() > lastFixTime + fixTimeout * 1000.0){
