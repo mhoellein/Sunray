@@ -13,6 +13,7 @@
    +   Ardumower BLE UART module (HM-10/CC2540/CC2541)
    +   optional: Ardumower IMU (MPU6050/MPU9150/MPU9250/MPU9255) - choose your IMU below
    +   optional: Ardumower WIFI (ESP8266 ESP-01 with stock firmware)   
+   +   optional: HTU21D temperature/humidity sensor
    + Ardumower RTK (ublox F9P)
    
 

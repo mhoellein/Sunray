@@ -7,6 +7,7 @@
 #include "comm.h"
 #include "WiFiEsp.h"
 #include "SparkFunMPU9250-DMP.h"
+#include "SparkFunHTU21D.h"
 #include "pinman.h"
 #include "ble.h"
 #include "motor.h"
@@ -32,6 +33,7 @@ UBLOX gps(GPS,GPS_BAUDRATE);
 BLEConfig bleConfig;
 Buzzer buzzer;
 Map maps;
+HTU21D myHumidity;
 PID pidLine(0.2, 0.01, 0); // not used
 PID pidAngle(2, 0.1, 0);  // not used
 
@@ -46,6 +48,8 @@ float statePitch = 0;
 float stateDeltaGPS = 0;
 float stateDeltaIMU = 0;
 float stateGroundSpeed = 0; // m/s
+float stateTemp = 0; // degreeC
+float stateHumidity = 0; // percent
 float setSpeed = 0.1; // linear speed (m/s)
 unsigned long stateLeftTicks = 0;
 unsigned long stateRightTicks = 0;
@@ -73,6 +77,8 @@ unsigned long statMowDurationFloat = 0; // seconds
 unsigned long statMowDurationFix = 0; // seconds
 unsigned long statMowFloatToFixRecoveries = 0; // counter
 unsigned long statImuRecoveries = 0; // counter
+float statTempMin = 9999; 
+float statTempMax = -9999; 
 float statMowMaxDgpsAge = 0; // seconds
 float statMowDistanceTraveled = 0; // meter
 
@@ -86,6 +92,7 @@ unsigned long nextControlTime = 0;
 unsigned long lastComputeTime = 0;
 
 unsigned long nextImuTime = 0;
+unsigned long nextTempTime = 0;
 unsigned long imuDataTimeout = 0;
 bool imuFound = false;
 float lastIMUYaw = 0; 
@@ -230,7 +237,7 @@ void startIMU(bool forceIMU){
   CONSOLE.println();    
   imu.resetFifo();
   lastIMUYaw = 0;
-  imuDataTimeout = millis() + 1000;
+  imuDataTimeout = millis() + 10000;
 }
 
 
@@ -356,7 +363,7 @@ void start(){
         Wire.setClock(I2C_SPEED);     
       #endif
     } else break;
-  }
+  }  
   delay(1500);
   CONSOLE.println(VER);          
   battery.begin();      
@@ -367,8 +374,10 @@ void start(){
   motor.begin();
   gps.begin();   
   maps.begin();
+  
+  myHumidity.begin();
     
-  startIMU(false);      
+  startIMU(false);        
   
   // initialize ESP module
   startWIFI();  
@@ -377,6 +386,7 @@ void start(){
   battery.allowSwitchOff(true);  
   watchdogEnable(10000L);   // 10 seconds  
 }
+
 
 // calculate statistics
 void calcStats(){
@@ -679,6 +689,20 @@ void run(){
   battery.run();
   motor.run();
   maps.run();  
+  
+  // temp
+  if (millis() > nextTempTime){
+    // https://learn.sparkfun.com/tutorials/htu21d-humidity-sensor-hookup-guide
+    nextTempTime = millis() + 60000;
+    stateTemp = myHumidity.readTemperature();
+    statTempMin = min(statTempMin, stateTemp);
+    statTempMax = max(statTempMax, stateTemp);
+    stateHumidity = myHumidity.readHumidity();      
+    CONSOLE.print("temp=");
+    CONSOLE.print(stateTemp,1);
+    CONSOLE.print("  humidity=");
+    CONSOLE.println(stateHumidity,0);    
+  }
   
   // IMU
   if (millis() > nextImuTime){

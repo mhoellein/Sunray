@@ -309,6 +309,10 @@ void cmdStats(){
   s += statMowMaxDgpsAge;
   s += ",";
   s += statImuRecoveries;
+  s += ",";
+  s += statTempMin;
+  s += ",";
+  s += statTempMax;
   cmdAnswer(s);  
 }
 

@@ -277,7 +277,7 @@ void Motor::run() {
     }
   } else {
     resetMotorFaultCounter = 0;  
-    if  (    ((abs(motorMowPWMCurr) > 100) && (motorMowSenseLP < 0.001)) 
+    /*if  (    ((abs(motorMowPWMCurr) > 100) && (motorMowSenseLP < 0.001)) 
          ||  ((abs(motorLeftPWMCurr) > 100) && (motorLeftSenseLP < 0.001))    
          ||  ((abs(motorRightPWMCurr) > 100) && (motorRightSenseLP < 0.001))  ){    
       stopControl();
@@ -294,7 +294,7 @@ void Motor::run() {
       CONSOLE.print(",");
       CONSOLE.println(motorMowSense);
       motorError = true;
-    }
+    }*/
   }   
 }  
 
