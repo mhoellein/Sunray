@@ -531,19 +531,23 @@ void controlRobotVelocity(){
   if ( (motor.motorLeftOverload) || (motor.motorRightOverload) || (motor.motorMowOverload) ){
     linear = 0.1;  
   }
-  if (motor.motorOverloadDuration > 5000){
-    CONSOLE.println("overload!");
-    stateSensor = SENS_OVERLOAD;
-    setOperation(OP_ERROR);
-    buzzer.sound(SND_STUCK, true);        
-  }  
-  if (motor.motorError){
-    motor.motorError = false;
-    CONSOLE.println("motor error!");
-    stateSensor = SENS_MOTOR_ERROR;
-    setOperation(OP_ERROR);
-    buzzer.sound(SND_STUCK, true);        
-  }  
+  if (ENABLE_OVERLOAD_DETECTION){
+    if (motor.motorOverloadDuration > 5000){
+      CONSOLE.println("overload!");    
+      stateSensor = SENS_OVERLOAD;
+      setOperation(OP_ERROR);
+      buzzer.sound(SND_STUCK, true);        
+    }  
+  }
+  if (ENABLE_FAULT_DETECTION){
+    if (motor.motorError){
+      motor.motorError = false;
+      CONSOLE.println("motor error!");
+      stateSensor = SENS_MOTOR_ERROR;
+      setOperation(OP_ERROR);
+      buzzer.sound(SND_STUCK, true);        
+    }  
+  }
   
   if (fabs(lateralError) > 1.0){ // actually, this should not happen (except something strange is going on...)
     CONSOLE.println("kidnapped!");

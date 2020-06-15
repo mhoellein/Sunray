@@ -268,12 +268,12 @@ void Motor::run() {
     if (millis() > nextResetMotorFaultTime){
       nextResetMotorFaultTime = millis() + 1000;
       resetFault();
-      resetMotorFaultCounter++;  
+      resetMotorFaultCounter++;        
       if (resetMotorFaultCounter > 10){
         stopControl();
         CONSOLE.println("ERROR: motor recovery failed");
         motorError = true;
-      }
+      }      
     }
   } else {
     resetMotorFaultCounter = 0;  

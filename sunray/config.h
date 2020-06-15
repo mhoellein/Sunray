@@ -96,6 +96,14 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define MOW_TOGGLE_DIR       true
 //#define MOW_TOGGLE_DIR       false
 
+// should the motor overload detection be enabled?
+#define ENABLE_OVERLOAD_DETECTION  true
+//#define ENABLE_OVERLOAD_DETECTION  false
+
+// should the motor fault (error) detection be enabled?
+#define ENABLE_FAULT_DETECTION  true
+//#define ENABLE_ERROR_DETECTION  false
+
 
 // ------ WIFI module (ESP8266 ESP-01) --------------------------------
 // WARNING: WIFI is highly experimental - not for productive use (yet)
