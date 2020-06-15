@@ -18,6 +18,7 @@
 class UdpSerial: public Stream{
   public:
     virtual void begin(unsigned long baud);
+    void beginUDP();
     virtual size_t write(uint8_t);    
     virtual int available();
     virtual int read();

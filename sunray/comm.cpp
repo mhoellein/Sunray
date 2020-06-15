@@ -403,6 +403,7 @@ void processBLE(){
 void processWifi()
 {
   if (!wifiFound) return;
+  if (!ENABLE_SERVER) return;
   // listen for incoming clients    
   if (client != NULL){
     if (stopClientTime != 0) {

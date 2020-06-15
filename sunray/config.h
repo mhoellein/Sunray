@@ -61,7 +61,7 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 // Arduino Due programming port => choose Serial
 #define CONSOLE SerialUSB
 //#define CONSOLE Serial
-//#define CONSOLE udpSerial
+//#define CONSOLE udpSerial         
 
 // ------- serial ports and baudrates---------------------------------
 #define CONSOLE_BAUDRATE    115200    // baudrate used for console
@@ -125,8 +125,17 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define WIFI_PASS "crackme99_now"    // your network password
 #define WIFI_IP   192,168,2,15      // choose IP e.g. 192.168.4.1  (comment out for dynamic IP/DHCP)
 
+#define ENABLE_SERVER true          // must be enabled for web app
+//#define ENABLE_SERVER false
+
+//#define ENABLE_UDP true                // enable console for UDP?
+#define ENABLE_UDP false
 
 // ------ experimental options -------------------------
+// detect robot being kidnapped?
+#define KIDNAP_DETECT true
+//#define KIDNAP_DETECT false
+
 // drive curves smoothly?
 //#define SMOOTH_CURVES  true
 #define SMOOTH_CURVES  false

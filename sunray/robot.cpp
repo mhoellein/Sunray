@@ -166,12 +166,15 @@ void startWIFI(){
         #endif
       }    
     }    
+    if (ENABLE_UDP) udpSerial.beginUDP();  
     CONSOLE.print("You're connected with SSID=");    
     CONSOLE.print(WiFi.SSID());
     CONSOLE.print(" and IP=");        
     IPAddress ip = WiFi.localIP();    
     CONSOLE.println(ip);   
-    server.begin();
+    if (ENABLE_SERVER){
+      server.begin();
+    }
   }    
 }
 
@@ -549,11 +552,13 @@ void controlRobotVelocity(){
     }  
   }
   
-  if (fabs(lateralError) > 1.0){ // actually, this should not happen (except something strange is going on...)
-    CONSOLE.println("kidnapped!");
-    stateSensor = SENS_KIDNAPPED;
-    setOperation(OP_ERROR);
-    buzzer.sound(SND_STUCK, true);        
+  if (KIDNAP_DETECT){
+    if (fabs(lateralError) > 1.0){ // actually, this should not happen (except something strange is going on...)
+      CONSOLE.println("kidnapped!");
+      stateSensor = SENS_KIDNAPPED;
+      setOperation(OP_ERROR);
+      buzzer.sound(SND_STUCK, true);        
+   }
   }
     
   // allow rotations only near last or next waypoint
