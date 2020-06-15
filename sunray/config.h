@@ -29,6 +29,8 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
    
 */
 
+#ifndef __cplusplus
+
 // ------- Bluetooth4.0/BLE module -----------------------------------
 // see Wiki on how to install the BLE module and configure the jumpers:
 // https://wiki.ardumower.de/index.php?title=Ardumower_Sunray#Bluetooth_BLE_UART_module
@@ -46,6 +48,10 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 //#define MPU9150
 #define MPU9250   // also choose this for MPU9255
 
+#else
+
+#include "udpserial.h"
+
 // should the mower turn off if IMU is tilt over? (yes: uncomment line, no: comment line)
 #define ENABLE_TILT_DETECTION  1
 
@@ -55,6 +61,7 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 // Arduino Due programming port => choose Serial
 #define CONSOLE SerialUSB
 //#define CONSOLE Serial
+//#define CONSOLE udpSerial
 
 // ------- serial ports and baudrates---------------------------------
 #define CONSOLE_BAUDRATE    115200    // baudrate used for console
@@ -211,3 +218,4 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define DEBUG(x) CONSOLE.print(x)
 #define DEBUGLN(x) CONSOLE.println(x)
 
+#endif
