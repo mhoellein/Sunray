@@ -29,7 +29,10 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
    
 */
 
-#ifndef __cplusplus
+#ifdef __cplusplus
+  #include "udpserial.h"
+#endif
+
 
 // ------- Bluetooth4.0/BLE module -----------------------------------
 // see Wiki on how to install the BLE module and configure the jumpers:
@@ -48,9 +51,6 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 //#define MPU9150
 #define MPU9250   // also choose this for MPU9255
 
-#else
-
-#include "udpserial.h"
 
 // should the mower turn off if IMU is tilt over? (yes: uncomment line, no: comment line)
 #define ENABLE_TILT_DETECTION  1
@@ -227,4 +227,4 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 #define DEBUG(x) CONSOLE.print(x)
 #define DEBUGLN(x) CONSOLE.println(x)
 
-#endif
+
