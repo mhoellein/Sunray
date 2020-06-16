@@ -244,9 +244,9 @@ void cmdPosMode(){
   CONSOLE.print("absolutePosSource=");
   CONSOLE.print(absolutePosSource);
   CONSOLE.print(" lon=");
-  CONSOLE.print(absolutePosSourceLon);
+  CONSOLE.print(absolutePosSourceLon, 8);
   CONSOLE.print(" lat=");
-  CONSOLE.println(absolutePosSourceLat);
+  CONSOLE.println(absolutePosSourceLat, 8);
   String s = F("P");
   cmdAnswer(s);
 }
