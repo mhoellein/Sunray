@@ -137,9 +137,10 @@ void UBLOX::dispatchMessage() {
           case 0x14: 
             { // UBX-NAV-HPPOSLLH
               iTOW = (unsigned long)this->unpack_int32(4);
-              lon = ((double)this->unpack_int32(8)) * 1e-7;    //+ ((double)this->unpack_int8(24)) * 1e-2;
-              lat = ((double)this->unpack_int32(12)) * 1e-7;   // + ((double)this->unpack_int8(25)) * 1e-2;
-              height = this->unpack_int32(16);              
+              lon = (1e-7  * (this->unpack_int32(8)   +  (this->unpack_int8(24) * 1e-2)));
+              lat = (1e-7  * (this->unpack_int32(12)  +  (this->unpack_int8(25) * 1e-2)));
+              height = (1e-3 * (this->unpack_int32(16) +  (this->unpack_int8(26) * 1e-2))); // HAE (WGS84 height)
+              //height = (1e-3 * (this->unpack_int32(20) +  (this->unpack_int8(27) * 1e-2))); // MSL height
               hAccuracy = ((double)((unsigned long)this->unpack_int32(28))) * 0.1 / 1000.0;
               vAccuracy = ((double)((unsigned long)this->unpack_int32(32))) * 0.1 / 1000.0;
               accuracy = sqrt(sq(hAccuracy) + sq(vAccuracy));
