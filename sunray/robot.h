@@ -36,8 +36,18 @@ enum Sensor {
       SENS_KIDNAPPED,
       SENS_OVERLOAD,
       SENS_MOTOR_ERROR,
+      SEN_SONAR_CENTER, 
+      SEN_SONAR_LEFT,
+      SEN_SONAR_RIGHT,
 };
 
+//sonar
+extern unsigned long nextSonarTime;
+extern unsigned int sonarDistCenter;
+extern unsigned int sonarDistRight;
+extern unsigned int sonarDistLeft;
+extern unsigned int sonarTriggerBelow;
+int readSensor(char type); //sonar
 extern OperationType stateOp; // operation
 extern Sensor stateSensor; // last triggered sensor
 extern float stateX;  // position-east (m)

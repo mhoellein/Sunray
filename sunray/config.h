@@ -140,6 +140,12 @@ Also, you may choose the serial port below for serial monitor output (CONSOLE).
 //#define SMOOTH_CURVES  true
 #define SMOOTH_CURVES  false
 
+// sonar
+#define sonarUse true
+#define sonarRightUse true
+#define sonarLeftUse true
+#define sonarCenterUse true
+#define SONAR_TRIGGER_BELOW 30
 
 // ------- I2C addresses -----------------------------
 #define DS1307_ADDRESS B1101000

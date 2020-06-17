@@ -1,4 +1,4 @@
-  // Ardumower Sunray 
+// Ardumower Sunray 
 // Copyright (c) 2013-2020 by Alexander Grau, Grau GmbH
 // Licensed GPLv3 for open source use
 // or Grau GmbH Commercial License for commercial use (http://grauonline.de/cms2/?page_id=153)
@@ -19,11 +19,13 @@
 #include "helper.h"
 #include "pid.h"
 #include "i2c.h"
+#include <NewPing.h>
 #include <Arduino.h>
 
 // #define I2C_SPEED  10000
 #define _BV(x) (1 << (x))
 
+#define NO_ECHO 0
 
 MPU9250_DMP imu;
 Motor motor;
@@ -109,6 +111,15 @@ bool foundDockSignal = true;
 float dockAngularSpeed = 0.1;
 
 
+unsigned long nextSonarTime=0;
+unsigned int sonarDistCenter;
+unsigned int sonarDistRight;
+unsigned int sonarDistLeft;
+#ifdef SONAR_TRIGGER_BELOW
+unsigned int sonarTriggerBelow=SONAR_TRIGGER_BELOW;
+#else
+unsigned int sonarTriggerBelow=0;
+#endif
 // must be defined to override default behavior
 void watchdogSetup (void){} 
 
@@ -345,6 +356,9 @@ bool checkAT24C32() {
   return (r == 1);
 }
 
+NewPing NewSonarLeft(pinSonarLeftTrigger, pinSonarLeftEcho, 110);
+NewPing NewSonarRight(pinSonarRightTrigger, pinSonarRightEcho, 110);
+NewPing NewSonarCenter(pinSonarCenterTrigger, pinSonarCenterEcho, 110);
 
 // robot start routine
 void start(){  
@@ -509,6 +523,15 @@ void computeRobotState(){
 }
 
 
+int readSensor(char type) {
+  switch(type) {
+      CONSOLE.print("Sensor=");
+      CONSOLE.println(type);
+      case SEN_SONAR_CENTER: return(NewSonarCenter.ping_cm()); break;
+      case SEN_SONAR_LEFT: return(NewSonarLeft.ping_cm()); break;
+      case SEN_SONAR_RIGHT: return(NewSonarRight.ping_cm()); break;
+  }
+}
 // control robot velocity (linear,angular) to track line to next waypoint (target)
 // uses a stanley controller for line tracking
 // https://wiki.ardumower.de/index.php?title=Ardumower_Sunray#How_the_line_tracking_works
@@ -645,6 +668,52 @@ void controlRobotVelocity(){
       resetMotionMeasurement();
     }  
   }     
+  if ((sonarUse)){
+   static char senSonarTurn = SEN_SONAR_CENTER;
+   if (millis() > nextSonarTime) {
+     nextSonarTime = millis() + 500;
+     switch(senSonarTurn) {
+       case SEN_SONAR_RIGHT:
+         if (sonarRightUse) sonarDistRight = readSensor(SEN_SONAR_RIGHT);
+         senSonarTurn = SEN_SONAR_LEFT;
+         break;
+       case SEN_SONAR_LEFT:
+         if (sonarLeftUse) sonarDistLeft = readSensor(SEN_SONAR_LEFT);
+         senSonarTurn = SEN_SONAR_CENTER;
+         break;
+       case SEN_SONAR_CENTER:
+         if (sonarCenterUse) sonarDistCenter = readSensor(SEN_SONAR_CENTER);
+         senSonarTurn = SEN_SONAR_RIGHT;
+         break;
+       default:
+         senSonarTurn = SEN_SONAR_CENTER;
+         break;
+      }
+      if (sonarDistCenter < 11 || sonarDistCenter > 100) sonarDistCenter = NO_ECHO; // Objekt ist zu nah am Sensor Wert ist unbrauchbar
+      if (sonarDistRight < 11 || sonarDistRight > 100) sonarDistRight = NO_ECHO; // Object is too close to the sensor. Sensor value is useless
+      if (sonarDistLeft < 11 || sonarDistLeft  > 100) sonarDistLeft = NO_ECHO; // Filters spiks under the possible detection limit
+
+      if ((sonarDistLeft != NO_ECHO && sonarDistLeft < sonarTriggerBelow) 
+       || (sonarDistCenter != NO_ECHO && sonarDistCenter < sonarTriggerBelow)
+       || (sonarDistRight != NO_ECHO && sonarDistRight < sonarTriggerBelow)) {
+        
+        CONSOLE.println("obstacle by ultrasonic!");
+        stateSensor = SENS_OBSTACLE;
+        setOperation(OP_ERROR);
+        buzzer.sound(SND_STUCK, true);
+      }
+      /*CONSOLE.print("sonarTriggerBelow=");
+      CONSOLE.println(sonarTriggerBelow);
+      CONSOLE.print("NO_ECHO=");
+      CONSOLE.println(NO_ECHO);
+      CONSOLE.print("sonarDistRight=");
+      CONSOLE.println(sonarDistRight);
+      CONSOLE.print("sonarDistLeft=");
+      CONSOLE.println(sonarDistLeft);
+      CONSOLE.print("sonarDistCenter=");
+      CONSOLE.println(sonarDistCenter);*/
+   }
+  }
    
   if (targetReached){
     bool straight = maps.nextPointIsStraight();
@@ -826,4 +895,3 @@ void setOperation(OperationType op){
   }
   stateOp = op;  
 }
-
